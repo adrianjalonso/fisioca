@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import api from "../api/api";
 
 type LoginProps = {
@@ -16,6 +16,7 @@ export default function Login({
   setNome,
 }: LoginProps) {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
@@ -55,7 +56,19 @@ export default function Login({
     localStorage.setItem("email", data.user_email ?? "");
     setIdUser(data.user_id);
     localStorage.setItem("IdUser", String(data.user_id));
-    navigate("/dashboard");
+
+    // Volta para a rota que o usuário tentou acessar antes do login
+    const origem = (
+      location.state as {
+        from?: { pathname?: string; search?: string };
+      } | null
+    )?.from;
+    const destino =
+      origem?.pathname && origem.pathname !== "/" && origem.pathname !== "/login"
+        ? `${origem.pathname}${origem.search ?? ""}`
+        : "/dashboard";
+
+    navigate(destino, { replace: true });
   } catch {
     setErro("Não foi possível conectar ao servidor. Tente novamente.");
   } finally {

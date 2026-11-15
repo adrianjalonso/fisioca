@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
 import Menu from "../components/Menu";
 import { useUser } from "../context/UserContext";
+import { logout } from "../lib/auth";
 import {
   getProfile,
   updateProfile,
@@ -358,15 +358,16 @@ export default function Settings() {
                     </p>
                   </div>
 
-                  <Link
-                    to="/login"
+                  <button
+                    type="button"
+                    onClick={logout}
                     className="flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-5 py-3 text-sm font-semibold text-red-600 transition-colors hover:bg-red-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
                   >
                     <span className="material-symbols-outlined text-lg">
                       logout
                     </span>
                     Sair da conta
-                  </Link>
+                  </button>
                 </div>
               )}
             </section>

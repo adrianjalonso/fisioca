@@ -1,3 +1,5 @@
+import { logout } from "./auth"
+
 export const API_URL = (
   import.meta.env.VITE_API_URL ?? "http://localhost:3000"
 ).replace(/\/+$/, "")
@@ -19,9 +21,8 @@ export async function api<T = any>(
 
   const corpo = await resp.json().catch(() => null)
   if (resp.status === 401) {
-  localStorage.removeItem("token");
-  window.location.href = "/"; // ajuste para a rota da sua tela de login
-}
+    logout()
+  }
   if (!resp.ok) throw new Error(corpo?.error ?? "Erro na requisição")
   return corpo as T
 }

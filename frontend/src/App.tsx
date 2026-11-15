@@ -1,4 +1,4 @@
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 import { useCallback, useState } from "react";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -13,6 +13,8 @@ import Evolucoes from "./pages/Evolucoes";
 import NovaEvolucao from "./pages/NovaEvolucao";
 import NovoAgendamento from "./pages/NovoAgendamento";
 import EvolucoesPendentes from "./pages/EvolucoesPendentes";
+import ProtectedRoute from "./components/ProtectedRoute";
+import PublicOnlyRoute from "./components/PublicOnlyRoute";
 
 
 export default function App() {
@@ -49,44 +51,48 @@ export default function App() {
     >
       <div className="min-h-dvh w-full">
       <Routes>
-        <Route
-          path="/"
-          element={
-            <Login
-              setTitulo={setTitulo}
-              setIdUser={setIdUser}
-              setNome={setNome}
-              setEmailUsuario={setEmail}
-            />
-          }
-        />
-        <Route
-          path="/login"
-          element={
-            <Login
-              setTitulo={setTitulo}
-              setIdUser={setIdUser}
-              setNome={setNome}
-              setEmailUsuario={setEmail}
-            />
-          }
-        />
-        <Route path="cadastro" element={<Cadastro />} />
-        <Route
-          path="/dashboard"
-          element={
-            <Dashboard />
-          }
-        />
-        <Route path="/pacientes" element={<Pacientes />} />
-        <Route path="/registro" element={<Registro IdUser={IdUser} />} />
-        <Route path="/pacientes/:id" element={<FichaPaciente />} />
-        <Route path="/agenda" element={<Agenda />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/evolucoes" element={<Evolucoes />} />
-        <Route path="/novaevolucao" element={<NovaEvolucao />} />
-        <Route path="/novoagendamento" element={<NovoAgendamento />} />
-        <Route path="/evolucoespendentes" element={<EvolucoesPendentes />} />
+        {/* Rotas públicas: acessíveis apenas por quem não está logado */}
+        <Route element={<PublicOnlyRoute />}>
+          <Route
+            path="/"
+            element={
+              <Login
+                setTitulo={setTitulo}
+                setIdUser={setIdUser}
+                setNome={setNome}
+                setEmailUsuario={setEmail}
+              />
+            }
+          />
+          <Route
+            path="/login"
+            element={
+              <Login
+                setTitulo={setTitulo}
+                setIdUser={setIdUser}
+                setNome={setNome}
+                setEmailUsuario={setEmail}
+              />
+            }
+          />
+          <Route path="/cadastro" element={<Cadastro />} />
+        </Route>
+
+        {/* Rotas privadas: exigem token de sessão */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/pacientes" element={<Pacientes />} />
+          <Route path="/registro" element={<Registro IdUser={IdUser} />} />
+          <Route path="/pacientes/:id" element={<FichaPaciente />} />
+          <Route path="/agenda" element={<Agenda />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/evolucoes" element={<Evolucoes />} />
+          <Route path="/novaevolucao" element={<NovaEvolucao />} />
+          <Route path="/novoagendamento" element={<NovoAgendamento />} />
+          <Route path="/evolucoespendentes" element={<EvolucoesPendentes />} />
+        </Route>
+
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>
     </UserProvider>

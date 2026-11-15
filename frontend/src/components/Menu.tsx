@@ -1,6 +1,7 @@
 import { NavLink } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import { primeiroNome } from "../lib/nome";
+import { logout } from "../lib/auth";
 
 const itens = [
   { to: "/dashboard", icone: "dashboard", rotulo: "Painel" },
@@ -85,14 +86,15 @@ export default function Menu() {
                 Fisioterapeuta
               </p>
             </div>
-            <NavLink
-              to="/login"
+            <button
+              type="button"
+              onClick={logout}
               aria-label="Sair"
               title="Sair"
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
             >
               <span className="material-symbols-outlined">logout</span>
-            </NavLink>
+            </button>
           </div>
         </div>
       </aside>
