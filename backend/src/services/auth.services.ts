@@ -1,4 +1,4 @@
-
+import { createSupabaseAuthClient } from "../database/supabase.js";
 import { supabase } from "../database/supabase.js";
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
@@ -122,34 +122,46 @@ export async function atualizarPerfilService(
   return userSeguro
 }
 
-export async function loginService(email: string, password: string) {
+export async function loginService(
+  email: string,
+  password: string
+) {
   if (!email || !password) {
-    throw new Error("E-mail e senha são obrigatórios")
+    throw new Error("E-mail e senha são obrigatórios");
   }
 
-  const { data: user, error } = await supabase
+  const authClient = createSupabaseAuthClient();
+
+  // 1. Autenticar pelo Supabase Auth
+  const { data: authData, error: authError } =
+    await authClient.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password,
+    });
+
+  if (authError || !authData.user || !authData.session) {
+    throw new Error("E-mail ou senha inválidos");
+  }
+
+  // 2. Buscar o perfil correspondente
+  const { data: user, error: profileError } = await supabase
     .from("users")
-    .select("*")
-    .eq("user_email", email.trim())
-    .maybeSingle()
+    .select(
+      "user_id, user_nome, user_email, titulo, crefito, auth_id"
+    )
+    .eq("auth_id", authData.user.id)
+    .maybeSingle();
 
-  if (error) {
-    throw new Error(error.message)
+  if (profileError || !user) {
+    throw new Error("Perfil do usuário não encontrado");
   }
 
-  // mesma mensagem para e-mail inexistente e senha errada
-  const ok = user && (await bcrypt.compare(password, user.senha))
-  if (!ok) {
-    throw new Error("E-mail ou senha inválidos")
-  }
+  // 3. Devolver o token oficial e os dados do perfil
+  const { auth_id, ...userSeguro } = user;
 
-  const token = jwt.sign(
-    { sub: user.user_id },
-    process.env.JWT_SECRET!,
-    { expiresIn: "8h" }
-  )
-
-  // remove o hash antes de enviar ao front-end
-  const { senha, ...userSeguro } = user
-  return { token, user: userSeguro }
+  return {
+    token: authData.session.access_token,
+    expiresAt: authData.session.expires_at,
+    user: userSeguro,
+  };
 }
