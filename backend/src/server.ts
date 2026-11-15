@@ -11,7 +11,7 @@ const app = express();
 // FRONTEND_URL aceita uma ou várias origens separadas por vírgula.
 // Sem a variável, o CORS fica liberado (útil para previews da Vercel).
 app.use(cors({
-  origin: ["https://fisiohubapp.vercel.app", "http://localhost:5173"],
+  origin: ["https://fisioca.vercel.app", "http://localhost:5173"],
   credentials: true,
 }));
 app.use(express.json())
