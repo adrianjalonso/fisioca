@@ -1,6 +1,6 @@
 // src/legal/documentosLegais.ts
 //
-// Conteúdo dos documentos legais do FisioHub (versão beta).
+// Conteúdo dos documentos legais do Fisioca (versão beta).
 // IMPORTANTE: rascunho de trabalho. Revise com um advogado antes do lançamento
 // e preencha as constantes abaixo (tudo que está entre [colchetes]).
 
@@ -42,7 +42,7 @@ const termos: DocumentoLegal = {
     {
       titulo: "1. O serviço",
       paragrafos: [
-        "O FisioHub é uma ferramenta de gestão para profissionais de fisioterapia: cadastro de pacientes, agendamentos e registro de evoluções. Está em fase beta e é oferecido sem custo, a convite.",
+        "O Fisioca é uma ferramenta de gestão para profissionais de fisioterapia: cadastro de pacientes, agendamentos e registro de evoluções. Está em fase beta e é oferecido sem custo, a convite.",
       ],
     },
     {
@@ -60,7 +60,7 @@ const termos: DocumentoLegal = {
     {
       titulo: "4. Responsabilidade profissional",
       paragrafos: [
-        "O FisioHub é apenas uma ferramenta de apoio. Não substitui o julgamento clínico nem o prontuário oficial exigido pelas normas profissionais. O conteúdo clínico e as condutas são de responsabilidade exclusiva do profissional.",
+        "O Fisioca é apenas uma ferramenta de apoio. Não substitui o julgamento clínico nem o prontuário oficial exigido pelas normas profissionais. O conteúdo clínico e as condutas são de responsabilidade exclusiva do profissional.",
       ],
     },
     {
@@ -72,25 +72,25 @@ const termos: DocumentoLegal = {
     {
       titulo: "6. Dados inseridos",
       paragrafos: [
-        "Os dados inseridos continuam sendo do profissional e dos pacientes. O FisioHub os trata conforme a Política de Privacidade.",
+        "Os dados inseridos continuam sendo do profissional e dos pacientes. O Fisioca os trata conforme a Política de Privacidade.",
       ],
     },
     {
       titulo: "7. Propriedade intelectual",
       paragrafos: [
-        "O código, o design e o nome FisioHub pertencem ao responsável pelo projeto. O uso do sistema não transfere nenhum direito sobre eles.",
+        "O código, o design e o nome Fisioca pertencem ao responsável pelo projeto. O uso do sistema não transfere nenhum direito sobre eles.",
       ],
     },
     {
       titulo: "8. Disponibilidade e responsabilidade",
       paragrafos: [
-        "O sistema é oferecido no estado em que se encontra, sem garantia de funcionamento ininterrupto. Na medida permitida pela lei, o FisioHub não responde por perdas decorrentes de indisponibilidade, falhas ou uso indevido da conta pelo próprio profissional.",
+        "O sistema é oferecido no estado em que se encontra, sem garantia de funcionamento ininterrupto. Na medida permitida pela lei, o Fisioca não responde por perdas decorrentes de indisponibilidade, falhas ou uso indevido da conta pelo próprio profissional.",
       ],
     },
     {
       titulo: "9. Encerramento",
       paragrafos: [
-        `Você pode encerrar sua participação a qualquer momento. O FisioHub pode suspender contas em caso de descumprimento destes termos ou de encerramento do beta. Os dados serão tratados conforme a Política de Privacidade e o termo de participação no beta, com exclusão em até ${PRAZO_EXCLUSAO_DIAS} dias, salvo obrigação legal de guarda.`,
+        `Você pode encerrar sua participação a qualquer momento. O Fisioca pode suspender contas em caso de descumprimento destes termos ou de encerramento do beta. Os dados serão tratados conforme a Política de Privacidade e o termo de participação no beta, com exclusão em até ${PRAZO_EXCLUSAO_DIAS} dias, salvo obrigação legal de guarda.`,
       ],
     },
     {
@@ -107,12 +107,12 @@ const privacidade: DocumentoLegal = {
   titulo: "Política de Privacidade",
   abaCurta: "Privacidade",
   intro:
-    "Esta política explica como o FisioHub trata dados pessoais, em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018).",
+    "Esta política explica como o Fisioca trata dados pessoais, em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018).",
   secoes: [
     {
       titulo: "1. Quem somos",
       paragrafos: [
-        `O FisioHub é um sistema de gestão para profissionais de fisioterapia, mantido por ${RESPONSAVEL}. Contato para assuntos de privacidade: ${CONTATO}.`,
+        `O Fisioca é um sistema de gestão para profissionais de fisioterapia, mantido por ${RESPONSAVEL}. Contato para assuntos de privacidade: ${CONTATO}.`,
       ],
     },
     {
@@ -132,8 +132,8 @@ const privacidade: DocumentoLegal = {
     {
       titulo: "4. Papéis e base legal",
       paragrafos: [
-        "Os dados dos pacientes são tratados em nome do profissional, que é o controlador e responde por ter base legal para o tratamento, em regra a tutela da saúde em procedimento realizado por profissional de saúde (art. 11, II, “f”, da LGPD). O FisioHub atua como operador desses dados.",
-        "Para os dados da conta do profissional, o FisioHub é o controlador, e a base legal é a execução do contrato de uso do sistema.",
+        "Os dados dos pacientes são tratados em nome do profissional, que é o controlador e responde por ter base legal para o tratamento, em regra a tutela da saúde em procedimento realizado por profissional de saúde (art. 11, II, “f”, da LGPD). O Fisioca atua como operador desses dados.",
+        "Para os dados da conta do profissional, o Fisioca é o controlador, e a base legal é a execução do contrato de uso do sistema.",
       ],
     },
     {
@@ -162,7 +162,7 @@ const privacidade: DocumentoLegal = {
     {
       titulo: "8. Direitos dos titulares",
       paragrafos: [
-        `Pessoas cujos dados são tratados podem pedir confirmação do tratamento, acesso, correção, anonimização, portabilidade, exclusão e informações sobre compartilhamento (art. 18 da LGPD). Pacientes devem fazer o pedido ao seu fisioterapeuta, que é o controlador, e o FisioHub auxilia tecnicamente. Profissionais podem escrever para ${CONTATO}.`,
+        `Pessoas cujos dados são tratados podem pedir confirmação do tratamento, acesso, correção, anonimização, portabilidade, exclusão e informações sobre compartilhamento (art. 18 da LGPD). Pacientes devem fazer o pedido ao seu fisioterapeuta, que é o controlador, e o Fisioca auxilia tecnicamente. Profissionais podem escrever para ${CONTATO}.`,
       ],
     },
     {

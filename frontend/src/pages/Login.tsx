@@ -93,7 +93,7 @@ export default function Login({
                 <span className="material-symbols-outlined">ecg_heart</span>
               </div>
               <h1 className="text-2xl font-bold tracking-tight text-black">
-                FisioHub
+                Fisioca
               </h1>
             </div>
             <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
@@ -223,7 +223,7 @@ export default function Login({
             <p className="text-lg font-light leading-relaxed text-white/90">
               Acesse análises de pacientes em tempo real, acompanhe o progresso
               da recuperação e gerencie consultas de forma transparente com o
-              FisioHub.
+              Fisioca.
             </p>
           </div>
           <div className="mt-8 text-sm font-medium text-white">

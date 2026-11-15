@@ -321,7 +321,7 @@ export default function Cadastro() {
                   >
                     Política de Privacidade
                   </button>{" "}
-                  do FisioHub.
+                  do Fisioca.
                 </label>
               </div>
 
@@ -371,7 +371,7 @@ export default function Cadastro() {
               <p className="text-lg font-light leading-relaxed text-white/90">
                 Acesse análises de pacientes em tempo real, acompanhe o
                 progresso da recuperação e gerencie consultas de forma
-                transparente com o FisioHub.
+                transparente com o Fisioca.
               </p>
             </div>
             <div className="mt-8 text-sm font-medium text-white">

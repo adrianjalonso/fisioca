@@ -31,7 +31,7 @@ export default function Menu() {
             </div>
             <div className="flex flex-col leading-tight">
               <h1 className="text-xl font-bold tracking-tight text-black">
-                FisioHub
+                Fisioca
               </h1>
               <p className="text-xs font-medium text-gray-500">
                 Portal do Fisioterapeuta

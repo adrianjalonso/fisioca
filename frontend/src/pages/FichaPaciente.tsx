@@ -214,7 +214,7 @@ function montarDocumento(
 <body>
   <div class="topo">
     <h1>Prontuário do paciente</h1>
-    <p>FisioHub<br />Emitido em ${esc(emitido)}</p>
+    <p>Fisioca<br />Emitido em ${esc(emitido)}</p>
   </div>
 
   <h2>${esc(nome)}</h2>
@@ -957,7 +957,7 @@ setSalvando(false);
 
             <div className="flex justify-center pb-8 pt-4">
               <p className="text-center text-xs text-gray-500">
-                © 2026 FisioHub. Todos os direitos reservados. <br />
+                © 2026 Fisioca. Todos os direitos reservados. <br />
                 Informações confidenciais do paciente.
               </p>
             </div>

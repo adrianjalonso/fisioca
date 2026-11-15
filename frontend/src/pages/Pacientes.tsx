@@ -610,7 +610,7 @@ async function reativarPaciente(paciente: Pacientes) {
 
             <div className="flex justify-center pb-8 pt-4">
               <p className="text-center text-xs text-gray-500">
-                © 2026 FisioHub. Todos os direitos reservados. <br />
+                © 2026 Fisioca. Todos os direitos reservados. <br />
                 Informações confidenciais do paciente.
               </p>
             </div>

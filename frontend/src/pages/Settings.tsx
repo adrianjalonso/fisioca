@@ -155,7 +155,7 @@ export default function Settings() {
                 Configurações
               </h1>
               <p className="max-w-xl text-gray-600">
-                Gerencie sua conta e personalize sua experiência no FisioHub.
+                Gerencie sua conta e personalize sua experiência no Fisioca.
               </p>
             </header>
 
@@ -428,7 +428,7 @@ export default function Settings() {
 
             <div className="flex justify-center pb-4 pt-2">
               <p className="text-center text-xs text-gray-500">
-                © 2026 FisioHub. Todos os direitos reservados. <br />
+                © 2026 Fisioca. Todos os direitos reservados. <br />
                 Informações confidenciais do paciente.
               </p>
             </div>
