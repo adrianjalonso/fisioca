@@ -8,11 +8,11 @@ export const VERSAO_DOCUMENTOS = "0.1-beta";
 export const DATA_VERSAO = "11 de novembro de 2026";
 
 // --- Preencha antes de publicar -------------------------------------------
-const RESPONSAVEL = "[SEU NOME COMPLETO]";
-const CONTATO = "[E-MAIL DE CONTATO]";
-const REGIAO_SUPABASE = "[REGIÃO DO PROJETO NO SUPABASE]";
+const RESPONSAVEL = "Adrián Alonso";
+const CONTATO = "Fisioca.app@gmail.com";
+const REGIAO_SUPABASE = "West US (Oregon)";
 const PRAZO_EXCLUSAO_DIAS = "30";
-const COMARCA = "[SUA COMARCA]";
+const COMARCA = "Uberlândia/MG.";
 // true  -> mostra o parágrafo de transferência internacional de dados
 // false -> remove (use se o projeto do Supabase estiver em região do Brasil)
 const SERVIDORES_FORA_DO_BRASIL = true;
