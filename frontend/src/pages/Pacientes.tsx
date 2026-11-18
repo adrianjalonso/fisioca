@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import Menu from "../components/Menu";
+import { Skeleton } from "../components/Skeleton";
 import { api } from "../lib/api";
 import { useEffect, useState, useRef } from "react";
 import { useUser } from "../context/UserContext";
@@ -68,6 +69,7 @@ export default function PacientesPage() {
   const [confirmarAlta, setConfirmarAlta] = useState<Pacientes | null>(null);
   const [processando, setProcessando] = useState(false);
   const [buscaDePacientes, setBuscaDePacientes] = useState("");
+  const [carregandoPacientes, setCarregandoPacientes] = useState(true);
 
   const [menuPos, setMenuPos] = useState<{
     top?: number;
@@ -104,6 +106,7 @@ export default function PacientesPage() {
   if (!IdUser) return;
 
   async function carregarPacientes() {
+    setCarregandoPacientes(true);
     try {
       const lista = await api<Pacientes[]>("/pacientes/detalhado");
       setPacientes(lista);
@@ -113,6 +116,8 @@ export default function PacientesPage() {
       );
     } catch (e) {
       console.error("Erro ao carregar pacientes:", e);
+    } finally {
+      setCarregandoPacientes(false);
     }
   }
 
@@ -245,20 +250,24 @@ async function reativarPaciente(paciente: Pacientes) {
                   consultas com eficiência.
                 </p>
               </div>
-              <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 md:w-auto md:flex md:gap-4">
+              <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 md:w-auto md:flex md:gap-4" aria-busy={carregandoPacientes}>
                 <div className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-sm ring-1 ring-black/5 sm:px-5">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-500">
                     <span className="material-symbols-outlined">
                       diversity_1
                     </span>
                   </div>
-                  <div className="flex flex-col leading-tight">
+                  <div className="flex flex-col leading-tight gap-1">
                     <span className="text-xs font-medium text-gray-500">
                       Total de pacientes
                     </span>
-                    <span className="text-2xl font-bold tabular-nums">
-                      {totalPacientes}
-                    </span>
+                    {carregandoPacientes ? (
+                      <Skeleton className="h-7 w-10" />
+                    ) : (
+                      <span className="text-2xl font-bold tabular-nums">
+                        {totalPacientes}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-sm ring-1 ring-black/5 sm:px-5">
@@ -267,13 +276,17 @@ async function reativarPaciente(paciente: Pacientes) {
                       health_and_safety
                     </span>
                   </div>
-                  <div className="flex flex-col leading-tight">
+                  <div className="flex flex-col leading-tight gap-1">
                     <span className="text-xs font-medium text-gray-500">
                       Em tratamento
                     </span>
-                    <span className="text-2xl font-bold tabular-nums text-primary-dark">
-                      {pacientesAtivos}
-                    </span>
+                    {carregandoPacientes ? (
+                      <Skeleton className="h-7 w-10" />
+                    ) : (
+                      <span className="text-2xl font-bold tabular-nums text-primary-dark">
+                        {pacientesAtivos}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -312,7 +325,7 @@ async function reativarPaciente(paciente: Pacientes) {
             </div>
 
             {/* Tabela */}
-            <div className="flex min-h-[500px] flex-col overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
+            <div className="flex min-h-[500px] flex-col overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5" aria-busy={carregandoPacientes}>
               {/* Tabela — telas médias e maiores */}
               <div className="hidden overflow-x-auto xl:block">
                 <table className="w-full min-w-[760px] border-collapse text-left">
@@ -330,7 +343,39 @@ async function reativarPaciente(paciente: Pacientes) {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {pacientesFiltrados.map((paciente) => {
+                    {carregandoPacientes
+                      ? [0, 1, 2, 3, 4].map((i) => (
+                          <tr key={i}>
+                            <td className="px-6 py-4 align-middle">
+                              <div className="flex items-center gap-3">
+                                <Skeleton className="size-11 rounded-full" />
+                                <div className="flex flex-col gap-2">
+                                  <Skeleton className="h-4 w-40" />
+                                  <Skeleton className="h-3 w-16" />
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 align-middle">
+                              <div className="flex flex-col gap-2">
+                                <Skeleton className="h-4 w-20" />
+                                <Skeleton className="h-3 w-24" />
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 align-middle">
+                              <div className="flex flex-col gap-2">
+                                <Skeleton className="h-4 w-24" />
+                                <Skeleton className="h-3 w-32" />
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 align-middle">
+                              <Skeleton className="h-6 w-28 rounded-full" />
+                            </td>
+                            <td className="px-6 py-4 text-right align-middle">
+                              <Skeleton className="ml-auto h-9 w-9 rounded-full" />
+                            </td>
+                          </tr>
+                        ))
+                      : pacientesFiltrados.map((paciente) => {
                       const idade = calcularIdade(paciente.data_nascimento);
                       const ativo = paciente.status === "Tratamento ativo";
 
@@ -458,7 +503,25 @@ async function reativarPaciente(paciente: Pacientes) {
 
               {/* Cards — celular */}
               <ul className="flex flex-col divide-y divide-gray-100 xl:hidden">
-                {pacientesFiltrados.map((paciente) => {
+                {carregandoPacientes
+                  ? [0, 1, 2, 3].map((i) => (
+                      <li key={i} className="p-4">
+                        <div className="flex items-start gap-3">
+                          <Skeleton className="size-12 rounded-full" />
+                          <div className="min-w-0 flex-1 space-y-2">
+                            <Skeleton className="h-4 w-40" />
+                            <Skeleton className="h-3 w-32" />
+                            <Skeleton className="mt-2 h-6 w-28 rounded-full" />
+                          </div>
+                        </div>
+                        <div className="mt-3 rounded-xl bg-gray-50/70 px-3 py-2 space-y-2">
+                          <Skeleton className="h-3 w-24" />
+                          <Skeleton className="h-4 w-32" />
+                          <Skeleton className="h-3 w-40" />
+                        </div>
+                      </li>
+                    ))
+                  : pacientesFiltrados.map((paciente) => {
                   const idade = calcularIdade(paciente.data_nascimento);
                   const ativo = paciente.status === "Tratamento ativo";
                   const evolucoes = (paciente.evolucoes ??
@@ -562,7 +625,7 @@ async function reativarPaciente(paciente: Pacientes) {
                 })}
               </ul>
 
-              {pacientesFiltrados.length === 0 && (
+              {!carregandoPacientes && pacientesFiltrados.length === 0 && (
                 <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
                   <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary-dark">
                     <span className="material-symbols-outlined">
@@ -584,12 +647,18 @@ async function reativarPaciente(paciente: Pacientes) {
 
               <div className="mt-auto flex flex-col items-center justify-between gap-4 border-t border-gray-100 px-6 py-4 md:flex-row">
                 <p className="text-sm text-gray-600">
-                  Mostrando{" "}
-                  <span className="font-semibold">
-                    {pacientesFiltrados.length}
-                  </span>{" "}
-                  de <span className="font-semibold">{totalPacientes}</span>{" "}
-                  pacientes
+                  {carregandoPacientes ? (
+                    <Skeleton className="h-4 w-48" />
+                  ) : (
+                    <>
+                      Mostrando{" "}
+                      <span className="font-semibold">
+                        {pacientesFiltrados.length}
+                      </span>{" "}
+                      de <span className="font-semibold">{totalPacientes}</span>{" "}
+                      pacientes
+                    </>
+                  )}
                 </p>
                 <div className="flex gap-2">
                   <button

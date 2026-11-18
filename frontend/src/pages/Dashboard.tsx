@@ -1,4 +1,5 @@
 import Menu from "../components/Menu";
+import { Skeleton } from "../components/Skeleton";
 import {api} from "../lib/api";
 import { useEffect, useState, useRef } from "react";
 import type { Agendamento } from "../types/types";
@@ -107,11 +108,13 @@ export default function Dashboard() {
   const [ComparacaoPacientes, setComparacaoPacientes] = useState("");
   const [listaPacientes, setListaPacientes] = useState<Pacientes[]>([]);
   const [evolucoesDoDia, setEvolucoesDoDia] = useState(0);
+  const [carregandoResumo, setCarregandoResumo] = useState(true);
 
   useEffect(() => {
   if (!IdUser) return;
 
   async function carregarDados() {
+    setCarregandoResumo(true);
     try {
       const params = new URLSearchParams({
         agora: localNaive(new Date()),
@@ -160,6 +163,8 @@ export default function Dashboard() {
       setEvolucoesDoDia(r.totalPendentes);
     } catch (e) {
       console.error("Erro ao carregar o painel:", e);
+    } finally {
+      setCarregandoResumo(false);
     }
   }
 
@@ -172,8 +177,9 @@ export default function Dashboard() {
     (a) => new Date(a.data_hora) >= agora,
   );
 
-  const resumoDia =
-    atendimentosHoje === 0
+  const resumoDia = carregandoResumo
+    ? "Carregando seu resumo de hoje..."
+    : atendimentosHoje === 0
       ? "Você não tem atendimentos agendados para hoje."
       : atendimentosHoje === 1
         ? "Você tem 1 atendimento hoje."
@@ -340,7 +346,7 @@ function completarNota(paciente: Pacientes, agendamento: AgendamentoPendente) {
           </div>
 
           {/* Cards de resumo */}
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-3" aria-busy={carregandoResumo}>
             {/* Atendimentos hoje */}
             <div className="flex flex-col justify-between gap-5 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5 transition hover:shadow-md">
               <div className="flex items-center gap-4">
@@ -354,15 +360,24 @@ function completarNota(paciente: Pacientes, agendamento: AgendamentoPendente) {
                 </p>
               </div>
               <div className="flex flex-col gap-2">
-                <h3 className="text-5xl font-bold tabular-nums">
-                  {atendimentosHoje}
-                </h3>
-                <p className="flex items-center gap-1.5 text-xs font-medium text-primary-dark">
-                  <span className="material-symbols-outlined text-base">
-                    {iconeTendencia}
-                  </span>
-                  {comparacao}
-                </p>
+                {carregandoResumo ? (
+                  <>
+                    <Skeleton className="h-12 w-20" />
+                    <Skeleton className="h-4 w-40" />
+                  </>
+                ) : (
+                  <>
+                    <h3 className="text-5xl font-bold tabular-nums">
+                      {atendimentosHoje}
+                    </h3>
+                    <p className="flex items-center gap-1.5 text-xs font-medium text-primary-dark">
+                      <span className="material-symbols-outlined text-base">
+                        {iconeTendencia}
+                      </span>
+                      {comparacao}
+                    </p>
+                  </>
+                )}
               </div>
             </div>
 
@@ -377,15 +392,24 @@ function completarNota(paciente: Pacientes, agendamento: AgendamentoPendente) {
                 </p>
               </div>
               <div className="flex flex-col gap-2">
-                <h3 className="text-5xl font-bold tabular-nums">
-                  {evolucoesDoDia}
-                </h3>
-                <p className="flex items-center gap-1.5 text-xs font-medium text-amber-600">
-                  <span className="material-symbols-outlined text-base">
-                    {evolucoesDoDia > 0 ? "priority_high" : "check_circle"}
-                  </span>
-                  {evolucoesDoDia > 0 ? "Ação necessária" : "Tudo em dia"}
-                </p>
+                {carregandoResumo ? (
+                  <>
+                    <Skeleton className="h-12 w-20" />
+                    <Skeleton className="h-4 w-32" />
+                  </>
+                ) : (
+                  <>
+                    <h3 className="text-5xl font-bold tabular-nums">
+                      {evolucoesDoDia}
+                    </h3>
+                    <p className="flex items-center gap-1.5 text-xs font-medium text-amber-600">
+                      <span className="material-symbols-outlined text-base">
+                        {evolucoesDoDia > 0 ? "priority_high" : "check_circle"}
+                      </span>
+                      {evolucoesDoDia > 0 ? "Ação necessária" : "Tudo em dia"}
+                    </p>
+                  </>
+                )}
               </div>
             </div>
 
@@ -400,15 +424,24 @@ function completarNota(paciente: Pacientes, agendamento: AgendamentoPendente) {
                 </p>
               </div>
               <div className="flex flex-col gap-2">
-                <h3 className="text-5xl font-bold tabular-nums">
-                  {totalPacientes}
-                </h3>
-                <p className="flex items-center gap-1.5 text-xs font-medium text-blue-600">
-                  <span className="material-symbols-outlined text-base">
-                    group_add
-                  </span>
-                  {ComparacaoPacientes}
-                </p>
+                {carregandoResumo ? (
+                  <>
+                    <Skeleton className="h-12 w-20" />
+                    <Skeleton className="h-4 w-44" />
+                  </>
+                ) : (
+                  <>
+                    <h3 className="text-5xl font-bold tabular-nums">
+                      {totalPacientes}
+                    </h3>
+                    <p className="flex items-center gap-1.5 text-xs font-medium text-blue-600">
+                      <span className="material-symbols-outlined text-base">
+                        group_add
+                      </span>
+                      {ComparacaoPacientes}
+                    </p>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -420,15 +453,19 @@ function completarNota(paciente: Pacientes, agendamento: AgendamentoPendente) {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h3 className="text-lg font-bold">Agenda de hoje</h3>
-                  <p className="text-sm text-gray-500">
-                    {agendamentosHoje.length === 0
-                      ? "Sem horários marcados"
-                      : `${agendamentosHoje.length} ${
-                          agendamentosHoje.length === 1
-                            ? "horário marcado"
-                            : "horários marcados"
-                        }`}
-                  </p>
+                  {carregandoResumo ? (
+                    <Skeleton className="mt-1 h-4 w-40" />
+                  ) : (
+                    <p className="text-sm text-gray-500">
+                      {agendamentosHoje.length === 0
+                        ? "Sem horários marcados"
+                        : `${agendamentosHoje.length} ${
+                            agendamentosHoje.length === 1
+                              ? "horário marcado"
+                              : "horários marcados"
+                          }`}
+                    </p>
+                  )}
                 </div>
                 <Link to={"/novoagendamento"} className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-primary-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2">
                   <span className="material-symbols-outlined text-lg">add</span>
@@ -436,7 +473,22 @@ function completarNota(paciente: Pacientes, agendamento: AgendamentoPendente) {
                 </Link>
               </div>
 
-              {agendamentosHoje.length === 0 ? (
+              {carregandoResumo ? (
+                <div className="flex flex-col gap-3" aria-busy="true">
+                  {[0, 1, 2].map((i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-3 rounded-xl border border-gray-100 p-4 sm:gap-4"
+                    >
+                      <Skeleton className="h-14 w-16 shrink-0 sm:w-20" />
+                      <div className="flex min-w-0 flex-1 flex-col gap-2">
+                        <Skeleton className="h-4 w-40 max-w-full" />
+                        <Skeleton className="h-3 w-56 max-w-full" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : agendamentosHoje.length === 0 ? (
                 <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-gray-200 bg-gray-50/60 px-6 py-12 text-center">
                   <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary-dark">
                     <span className="material-symbols-outlined">
@@ -533,16 +585,36 @@ function completarNota(paciente: Pacientes, agendamento: AgendamentoPendente) {
             <section className="flex flex-col gap-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-bold">Evoluções pendentes</h3>
-                <span className="flex h-7 min-w-7 items-center justify-center rounded-full bg-amber-100 px-2 text-xs font-bold text-amber-600">
-                  {evolucoesDoDia}
-                </span>
+                {carregandoResumo ? (
+                  <Skeleton className="h-7 w-7 rounded-full" />
+                ) : (
+                  <span className="flex h-7 min-w-7 items-center justify-center rounded-full bg-amber-100 px-2 text-xs font-bold text-amber-600">
+                    {evolucoesDoDia}
+                  </span>
+                )}
               </div>
               <p className="text-sm text-gray-500">
                 Anotações das sessões anteriores que precisam ser concluídas.
               </p>
 
-              <div className="flex flex-col gap-3">
-                {listaPacientes.length === 0 ? (
+              <div className="flex flex-col gap-3" aria-busy={carregandoResumo}>
+                {carregandoResumo ? (
+                  [0, 1, 2].map((i) => (
+                    <div
+                      key={i}
+                      className="flex flex-col gap-3 rounded-xl border border-amber-100 bg-amber-50/50 p-4"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="size-11 rounded-full" />
+                        <Skeleton className="h-4 w-32" />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <Skeleton className="h-3 w-28" />
+                        <Skeleton className="h-4 w-24" />
+                      </div>
+                    </div>
+                  ))
+                ) : listaPacientes.length === 0 ? (
                   <div className="flex flex-col items-center gap-2 rounded-xl bg-gray-50/60 px-4 py-8 text-center">
                     <span className="material-symbols-outlined text-primary-dark">
                       task_alt

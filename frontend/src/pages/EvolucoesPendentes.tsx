@@ -1,4 +1,5 @@
 import Menu from "../components/Menu";
+import { Skeleton } from "../components/Skeleton";
 import { useEffect, useMemo, useState } from "react";
 import { api, agoraLocal } from "../lib/api";
 import { useNavigate } from "react-router-dom";
@@ -126,20 +127,29 @@ export default function EvolucoesPendentes() {
 
         <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-4 pb-28 sm:p-6 sm:pb-28 md:p-8 md:pb-28 lg:pb-8">
           {/* Resumo */}
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-3" aria-busy={carregando}>
             <div className="flex items-center gap-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-500">
                 <span className="material-symbols-outlined">edit_note</span>
               </div>
-              <div>
-                <p className="text-3xl font-bold tabular-nums">
-                  {pendencias.length}
-                </p>
-                <p className="text-sm text-gray-600">
-                  {pendencias.length === 1
-                    ? "nota pendente"
-                    : "notas pendentes"}
-                </p>
+              <div className="flex flex-col gap-1">
+                {carregando ? (
+                  <>
+                    <Skeleton className="h-8 w-12" />
+                    <Skeleton className="h-4 w-28" />
+                  </>
+                ) : (
+                  <>
+                    <p className="text-3xl font-bold tabular-nums">
+                      {pendencias.length}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      {pendencias.length === 1
+                        ? "nota pendente"
+                        : "notas pendentes"}
+                    </p>
+                  </>
+                )}
               </div>
             </div>
 
@@ -147,15 +157,24 @@ export default function EvolucoesPendentes() {
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-500">
                 <span className="material-symbols-outlined">diversity_1</span>
               </div>
-              <div>
-                <p className="text-3xl font-bold tabular-nums">
-                  {pacientesDistintos}
-                </p>
-                <p className="text-sm text-gray-600">
-                  {pacientesDistintos === 1
-                    ? "paciente envolvido"
-                    : "pacientes envolvidos"}
-                </p>
+              <div className="flex flex-col gap-1">
+                {carregando ? (
+                  <>
+                    <Skeleton className="h-8 w-12" />
+                    <Skeleton className="h-4 w-36" />
+                  </>
+                ) : (
+                  <>
+                    <p className="text-3xl font-bold tabular-nums">
+                      {pacientesDistintos}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      {pacientesDistintos === 1
+                        ? "paciente envolvido"
+                        : "pacientes envolvidos"}
+                    </p>
+                  </>
+                )}
               </div>
             </div>
 
@@ -163,11 +182,20 @@ export default function EvolucoesPendentes() {
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary-dark">
                 <span className="material-symbols-outlined">schedule</span>
               </div>
-              <div>
-                <p className="text-3xl font-bold tabular-nums">{maisAntiga}</p>
-                <p className="text-sm text-gray-600">
-                  {maisAntiga === 1 ? "dia, a mais antiga" : "dias, a mais antiga"}
-                </p>
+              <div className="flex flex-col gap-1">
+                {carregando ? (
+                  <>
+                    <Skeleton className="h-8 w-12" />
+                    <Skeleton className="h-4 w-32" />
+                  </>
+                ) : (
+                  <>
+                    <p className="text-3xl font-bold tabular-nums">{maisAntiga}</p>
+                    <p className="text-sm text-gray-600">
+                      {maisAntiga === 1 ? "dia, a mais antiga" : "dias, a mais antiga"}
+                    </p>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -217,9 +245,26 @@ export default function EvolucoesPendentes() {
             </div>
 
             {carregando ? (
-              <p className="py-10 text-center text-sm text-gray-500">
-                Carregando...
-              </p>
+              <ul className="flex flex-col gap-3" aria-busy="true">
+                {[0, 1, 2, 3].map((i) => (
+                  <li
+                    key={i}
+                    className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-amber-100 bg-amber-50/50 p-4"
+                  >
+                    <div className="flex min-w-0 items-center gap-4">
+                      <Skeleton className="h-11 w-11 rounded-full" />
+                      <div className="flex min-w-0 flex-col gap-2">
+                        <div className="flex items-center gap-2">
+                          <Skeleton className="h-4 w-36" />
+                          <Skeleton className="h-5 w-16 rounded-full" />
+                        </div>
+                        <Skeleton className="h-3 w-56 max-w-full" />
+                      </div>
+                    </div>
+                    <Skeleton className="h-9 w-32 rounded-lg" />
+                  </li>
+                ))}
+              </ul>
             ) : erro ? (
               <div className="flex flex-col items-center gap-2 rounded-xl bg-red-50 px-4 py-8 text-center">
                 <span className="material-symbols-outlined text-red-500">

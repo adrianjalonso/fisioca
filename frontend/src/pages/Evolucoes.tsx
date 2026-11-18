@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import Menu from "../components/Menu";
+import { Skeleton } from "../components/Skeleton";
 import { Link } from "react-router-dom";
 import { api } from "../lib/api";
 import { useUser } from "../context/UserContext";
@@ -146,8 +147,23 @@ export default function Evolucoes() {
                   {[0, 1, 2].map((i) => (
                     <div
                       key={i}
-                      className="h-28 animate-pulse rounded-2xl bg-white shadow-sm ring-1 ring-black/5"
-                    />
+                      className="flex flex-col gap-5 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5 md:flex-row md:items-center md:gap-6 md:p-6"
+                    >
+                      <div className="flex items-center gap-4 md:w-1/3">
+                        <Skeleton className="size-11 rounded-full" />
+                        <div className="min-w-0 flex-1 space-y-2">
+                          <Skeleton className="h-5 w-40" />
+                          <Skeleton className="h-3 w-24" />
+                          <Skeleton className="h-4 w-32" />
+                        </div>
+                      </div>
+                      <div className="min-w-0 flex-1 space-y-2 md:border-l md:border-gray-100 md:pl-6">
+                        <Skeleton className="h-4 w-36" />
+                        <Skeleton className="h-6 w-28" />
+                        <Skeleton className="h-4 w-full max-w-md" />
+                      </div>
+                      <Skeleton className="h-10 w-full rounded-xl md:w-52" />
+                    </div>
                   ))}
                 </div>
               )}

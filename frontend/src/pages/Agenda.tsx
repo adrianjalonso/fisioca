@@ -1,4 +1,5 @@
 import Menu from "../components/Menu";
+import { Skeleton } from "../components/Skeleton";
 import { Link } from "react-router-dom";
 import { api } from "../lib/api";
 import { useEffect, useState } from "react";
@@ -60,6 +61,7 @@ export default function Agenda() {
   const { IdUser } = useUser();
   const [agendamentos, setAgendamentos] = useState<Agendamentos[]>([]);
   const [dataSelecionada, setDataSelecionada] = useState(hoje);
+  const [carregandoAgenda, setCarregandoAgenda] = useState(true);
 
   const dataDePesquisa = formatarChaveDia(dataSelecionada);
   const ehHoje = dataDePesquisa === formatarChaveDia(hoje);
@@ -76,6 +78,7 @@ export default function Agenda() {
   if (!IdUser) return;
 
   async function carregarAgenda() {
+    setCarregandoAgenda(true);
     try {
       const data = await api<any[]>("/agendamentos");
 
@@ -89,6 +92,8 @@ export default function Agenda() {
       setAgendamentos(dadosFormatados);
     } catch (e) {
       console.error("Erro ao carregar a agenda:", e);
+    } finally {
+      setCarregandoAgenda(false);
     }
   }
 
@@ -229,8 +234,22 @@ export default function Agenda() {
                   </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto px-4 pb-4">
-                  {HORARIOS.map((hora) => {
+                <div className="flex-1 overflow-y-auto px-4 pb-4" aria-busy={carregandoAgenda}>
+                  {carregandoAgenda ? (
+                    <div className="flex flex-col gap-3 pt-4">
+                      {[0, 1, 2, 3, 4].map((i) => (
+                        <div key={i} className="flex min-h-24 border-t border-gray-100 pt-2">
+                          <div className="w-16 shrink-0 pt-3">
+                            <Skeleton className="h-3 w-10" />
+                          </div>
+                          <div className="flex flex-1 flex-col gap-2 border-l border-gray-100 p-2">
+                            <Skeleton className="h-16 w-full rounded-xl" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    HORARIOS.map((hora) => {
                     // Agrupa pela hora cheia para não esconder atendimentos como 08:30
                     const agendamentosDaHora = agendamentosDoDia.filter(
                       (a) => horaDoAgendamento(a.data_hora).substring(0, 2) === hora.substring(0, 2),
@@ -316,7 +335,8 @@ export default function Agenda() {
                         </div>
                       </div>
                     );
-                  })}
+                  })
+                  )}
                 </div>
               </section>
 
@@ -325,11 +345,15 @@ export default function Agenda() {
                 <div className="flex items-center justify-between border-b border-gray-100 p-4">
                   <div>
                     <h3 className="font-bold">Resumo do dia</h3>
-                    <p className="mt-0.5 text-sm text-gray-500">
-                      {agendamentosDoDia.length === 1
-                        ? "1 agendamento"
-                        : `${agendamentosDoDia.length} agendamentos`}
-                    </p>
+                    {carregandoAgenda ? (
+                      <Skeleton className="mt-1 h-4 w-28" />
+                    ) : (
+                      <p className="mt-0.5 text-sm text-gray-500">
+                        {agendamentosDoDia.length === 1
+                          ? "1 agendamento"
+                          : `${agendamentosDoDia.length} agendamentos`}
+                      </p>
+                    )}
                   </div>
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary-dark">
                     <span className="material-symbols-outlined">
@@ -338,8 +362,25 @@ export default function Agenda() {
                   </div>
                 </div>
 
-                <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-4">
-                  {agendamentosDoDia.length === 0 ? (
+                <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-4" aria-busy={carregandoAgenda}>
+                  {carregandoAgenda ? (
+                    [0, 1, 2, 3].map((i) => (
+                      <div
+                        key={i}
+                        className="flex gap-3 rounded-xl border border-gray-100 bg-gray-50/60 p-3"
+                      >
+                        <div className="flex min-w-[44px] flex-col items-center gap-2">
+                          <Skeleton className="h-4 w-10" />
+                          <Skeleton className="h-2 w-2 rounded-full" />
+                        </div>
+                        <div className="min-w-0 flex-1 space-y-2">
+                          <Skeleton className="h-4 w-32" />
+                          <Skeleton className="h-3 w-24" />
+                          <Skeleton className="h-5 w-20 rounded-full" />
+                        </div>
+                      </div>
+                    ))
+                  ) : agendamentosDoDia.length === 0 ? (
                     <div className="flex flex-col items-center gap-2 py-10 text-center">
                       <span className="material-symbols-outlined text-3xl text-gray-300">
                         event_busy
