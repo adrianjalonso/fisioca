@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import api from "../api/api";
 
@@ -23,6 +23,14 @@ export default function Login({
   const [visible, setVisible] = useState(false);
   const [entrando, setEntrando] = useState(false);
   const [erro, setErro] = useState("");
+  const [aviso, setAviso] = useState("");
+
+  useEffect(() => {
+    const state = location.state as { senhaRedefinida?: boolean } | null;
+    if (state?.senhaRedefinida) {
+      setAviso("Senha redefinida com sucesso. Faça login com a nova senha.");
+    }
+  }, [location.state]);
 
   async function verificar(e: React.FormEvent<HTMLFormElement>) {
   e.preventDefault();
@@ -105,6 +113,18 @@ export default function Login({
           </div>
 
           <form onSubmit={verificar} className="flex w-full flex-col gap-5">
+            {aviso && (
+              <div
+                role="status"
+                className="flex items-start gap-3 rounded-xl bg-primary/10 px-4 py-3 text-sm font-medium text-primary-dark ring-1 ring-primary/20"
+              >
+                <span className="material-symbols-outlined text-xl">
+                  check_circle
+                </span>
+                {aviso}
+              </div>
+            )}
+
             {erro && (
               <div
                 role="alert"
@@ -144,13 +164,12 @@ export default function Login({
                 <label htmlFor="senha" className={rotulo}>
                   Senha
                 </label>
-                <a
+                <Link
                   className="text-sm font-medium text-primary-dark transition-colors hover:underline"
-                  href="#"
-                  onClick={(e) => e.preventDefault()}
+                  to="/esqueci-senha"
                 >
                   Esqueceu a senha?
-                </a>
+                </Link>
               </div>
               <div className="relative">
                 <span className={iconeCampo}>lock</span>

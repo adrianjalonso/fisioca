@@ -49,3 +49,27 @@ export function updateProfile(userData: DadosPerfil) {
     body: JSON.stringify(userData),
   });
 }
+
+export function requestForgotPassword(email: string) {
+  return request<{ message: string }>("/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export function resetPassword(token: string, novaSenha: string) {
+  return request<{ message: string }>("/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify({ token, novaSenha }),
+  });
+}
+
+export function changePassword(
+  senhaAtual: string,
+  novaSenha: string
+) {
+  return request<{ message: string; token: string; expiresAt: number }>("/auth/alterar-senha", {
+    method: "PATCH",
+    body: JSON.stringify({ senhaAtual, novaSenha }),
+  });
+}

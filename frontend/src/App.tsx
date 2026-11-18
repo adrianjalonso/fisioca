@@ -15,6 +15,8 @@ import NovoAgendamento from "./pages/NovoAgendamento";
 import EvolucoesPendentes from "./pages/EvolucoesPendentes";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicOnlyRoute from "./components/PublicOnlyRoute";
+import EsqueciSenha from "./pages/EsqueciSenha";
+import RedefinirSenha from "./pages/RedefinirSenha";
 
 
 export default function App() {
@@ -76,6 +78,8 @@ export default function App() {
             }
           />
           <Route path="/cadastro" element={<Cadastro />} />
+          <Route path="/esqueci-senha" element={<EsqueciSenha />} />
+          <Route path="/redefinir-senha" element={<RedefinirSenha />} />
         </Route>
 
         {/* Rotas privadas: exigem token de sessão */}

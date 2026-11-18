@@ -14,12 +14,12 @@ export async function registerService(
     throw new Error("Todos os campos são obrigatorios")
   }
 
-  const passwordHash = await bcrypt.hash(password, 10)
+  const emailNormalizado = email.trim().toLowerCase()
 
   const { data, error } = await supabase
     .from("users")
     .select()
-    .eq("user_email", email)
+    .eq("user_email", emailNormalizado)
     .maybeSingle()
 
   if (error) {
@@ -30,19 +30,42 @@ export async function registerService(
     throw new Error("Usuário ja cadastrado!")
   }
 
+  const passwordHash = await bcrypt.hash(password, 10)
+
+  // 1. Criar o usuário no Supabase Auth (a senha precisa vir em texto puro aqui)
+  const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+    email: emailNormalizado,
+    password,
+    email_confirm: true,
+    user_metadata: { nome, titulo, crefito },
+  })
+
+  if (authError || !authData.user) {
+    if (authError?.message?.toLowerCase().includes("already")) {
+      throw new Error("Usuário ja cadastrado!")
+    }
+    throw new Error(authError?.message ?? "Não foi possível criar o usuário no Auth")
+  }
+
+  const authId = authData.user.id
+
+  // 2. Inserir o perfil ligado ao UUID do Auth
   const { data: newUser, error: insertError } = await supabase
     .from("users")
     .insert({
       user_nome: nome,
-      user_email: email,
+      user_email: emailNormalizado,
       senha: passwordHash,
       titulo: titulo,
-      crefito: crefito
+      crefito: crefito,
+      auth_id: authId,
     })
     .select()
     .single()
 
   if (insertError) {
+    // rollback: não deixa um usuário órfão no Auth
+    await supabase.auth.admin.deleteUser(authId)
     throw new Error(insertError.message)
   }
 

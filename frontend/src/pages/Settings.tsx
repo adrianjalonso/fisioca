@@ -5,6 +5,7 @@ import { logout } from "../lib/auth";
 import {
   getProfile,
   updateProfile,
+  changePassword,
   type DadosPerfil,
 } from "../services/auth.service";
 
@@ -34,6 +35,14 @@ export default function Settings() {
     email: email ?? "",
     crefito: "",
   });
+
+  const [senhaAtual, setSenhaAtual] = useState("");
+  const [novaSenha, setNovaSenha] = useState("");
+  const [confirmarSenha, setConfirmarSenha] = useState("");
+  const [senhasVisiveis, setSenhasVisiveis] = useState(false);
+  const [alterandoSenha, setAlterandoSenha] = useState(false);
+  const [erroSenha, setErroSenha] = useState("");
+  const [sucessoSenha, setSucessoSenha] = useState("");
 
   useEffect(() => {
     let ativo = true;
@@ -139,6 +148,53 @@ export default function Settings() {
       setSalvando(false);
     }
   }
+
+  async function salvarSenha(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (alterandoSenha) return;
+
+    setErroSenha("");
+    setSucessoSenha("");
+
+    if (!senhaAtual || !novaSenha || !confirmarSenha) {
+      setErroSenha("Preencha todos os campos.");
+      return;
+    }
+
+    if (novaSenha !== confirmarSenha) {
+      setErroSenha("As novas senhas não coincidem.");
+      return;
+    }
+
+    if (novaSenha.length < 8) {
+      setErroSenha("A nova senha deve ter pelo menos 8 caracteres.");
+      return;
+    }
+
+    setAlterandoSenha(true);
+
+    try {
+      const resultado = await changePassword(senhaAtual, novaSenha);
+      // O Supabase revoga o token antigo ao trocar a senha; guardamos o novo
+      // para a sessão continuar ativa sem exigir um novo login.
+      localStorage.setItem("token", resultado.token);
+      setSenhaAtual("");
+      setNovaSenha("");
+      setConfirmarSenha("");
+      setSucessoSenha("Senha alterada com sucesso.");
+    } catch (e) {
+      setErroSenha(
+        e instanceof Error && e.message
+          ? e.message
+          : "Não foi possível alterar a senha."
+      );
+    } finally {
+      setAlterandoSenha(false);
+    }
+  }
+
+  const tipoSenha = senhasVisiveis ? "text" : "password";
+  const iconeOlho = senhasVisiveis ? "visibility_off" : "visibility";
 
   return (
     <div className="flex h-dvh w-full overflow-hidden">
@@ -370,6 +426,138 @@ export default function Settings() {
                   </button>
                 </div>
               )}
+            </section>
+
+            {/* Segurança */}
+            <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
+              <div className="border-b border-gray-100 p-4 sm:p-6">
+                <h2 className="text-lg font-bold">Segurança</h2>
+                <p className="text-sm text-gray-500">
+                  Atualize sua senha de acesso ao Fisioca.
+                </p>
+              </div>
+
+              <form onSubmit={salvarSenha} className="flex flex-col gap-4 p-4 sm:p-6">
+                {erroSenha && (
+                  <div
+                    role="alert"
+                    className="flex items-start gap-3 rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600 ring-1 ring-red-100"
+                  >
+                    <span className="material-symbols-outlined text-xl">
+                      error
+                    </span>
+                    {erroSenha}
+                  </div>
+                )}
+
+                {sucessoSenha && (
+                  <div
+                    role="status"
+                    className="flex items-start gap-3 rounded-xl bg-primary/10 px-4 py-3 text-sm font-medium text-primary-dark ring-1 ring-primary/20"
+                  >
+                    <span className="material-symbols-outlined text-xl">
+                      check_circle
+                    </span>
+                    {sucessoSenha}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="flex flex-col gap-2 sm:col-span-2">
+                    <label htmlFor="senha-atual" className={rotulo}>
+                      Senha atual
+                    </label>
+                    <div className="relative">
+                      <span className={iconeCampo}>lock</span>
+                      <input
+                        id="senha-atual"
+                        value={senhaAtual}
+                        onChange={(e) => {
+                          setSenhaAtual(e.target.value);
+                          setErroSenha("");
+                          setSucessoSenha("");
+                        }}
+                        required
+                        autoComplete="current-password"
+                        className={`${campo} pr-11`}
+                        placeholder="Digite sua senha atual"
+                        type={tipoSenha}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setSenhasVisiveis(!senhasVisiveis)}
+                        aria-label={senhasVisiveis ? "Ocultar senhas" : "Mostrar senhas"}
+                        className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 transition-colors hover:text-gray-700 focus:outline-none focus-visible:text-primary-dark"
+                      >
+                        <span className="material-symbols-outlined text-[20px]">
+                          {iconeOlho}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label htmlFor="nova-senha" className={rotulo}>
+                      Nova senha
+                    </label>
+                    <div className="relative">
+                      <span className={iconeCampo}>lock_reset</span>
+                      <input
+                        id="nova-senha"
+                        value={novaSenha}
+                        onChange={(e) => {
+                          setNovaSenha(e.target.value);
+                          setErroSenha("");
+                          setSucessoSenha("");
+                        }}
+                        required
+                        minLength={8}
+                        autoComplete="new-password"
+                        className={`${campo} pr-4`}
+                        placeholder="Mínimo 8 caracteres"
+                        type={tipoSenha}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label htmlFor="confirmar-nova-senha" className={rotulo}>
+                      Confirmar nova senha
+                    </label>
+                    <div className="relative">
+                      <span className={iconeCampo}>lock_reset</span>
+                      <input
+                        id="confirmar-nova-senha"
+                        value={confirmarSenha}
+                        onChange={(e) => {
+                          setConfirmarSenha(e.target.value);
+                          setErroSenha("");
+                          setSucessoSenha("");
+                        }}
+                        required
+                        minLength={8}
+                        autoComplete="new-password"
+                        className={`${campo} pr-4`}
+                        placeholder="Repita a nova senha"
+                        type={tipoSenha}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-1">
+                  <button
+                    type="submit"
+                    disabled={alterandoSenha}
+                    className="flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white shadow-md shadow-primary/20 transition hover:bg-primary-dark hover:shadow-lg hover:shadow-primary/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <span className="material-symbols-outlined text-lg">
+                      {alterandoSenha ? "progress_activity" : "key"}
+                    </span>
+                    {alterandoSenha ? "Alterando..." : "Alterar senha"}
+                  </button>
+                </div>
+              </form>
             </section>
 
             {/* Preferências */}
