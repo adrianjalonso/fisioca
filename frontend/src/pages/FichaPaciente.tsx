@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import Menu from "../components/Menu";
 import { Skeleton } from "../components/Skeleton";
 import { api } from "../lib/api";
@@ -38,6 +38,18 @@ interface FormDados {
 type Feedback = { tipo: "sucesso" | "erro"; mensagem: string } | null;
 
 const EVOLUCOES_VISIVEIS = 3;
+
+function formDePaciente(paciente: PacienteFicha): FormDados {
+  return {
+    nome: paciente.nome_paciente ?? "",
+    nascimento: paciente.data_nascimento?.split("T")[0] ?? "",
+    genero: paciente.genero ?? "",
+    email: paciente.email ?? "",
+    telefone: formatarTelefone(paciente.telefone ?? ""),
+    endereco: paciente.endereco ?? "",
+    anamnese: paciente.anamnese ?? "",
+  };
+}
 
 // Aceita qualquer tipo: se a coluna for numérica, o Supabase devolve number
 function formatarTelefone(entrada: unknown) {
@@ -268,6 +280,7 @@ function imprimirHtml(html: string, tituloArquivo: string) {
 
 export default function FichaPaciente() {
   const { id } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const { IdUser, nome: nomeUser, titulo } = useUser();
 
@@ -298,6 +311,14 @@ export default function FichaPaciente() {
 
     setPaciente(r.paciente);
     setEvolucoes(r.evolucoes);
+
+    // "Editar cadastro" (menu de pacientes) abre a ficha já em modo de edição.
+    const estado = location.state as { editar?: boolean } | null;
+    if (r.paciente && estado?.editar) {
+      setForm(formDePaciente(r.paciente));
+      setFeedback(null);
+      setEditando(true);
+    }
   } catch (e) {
     console.error("Erro ao carregar a ficha:", e);
     setErroCarregar("Não foi possível carregar a ficha do paciente.");
@@ -307,7 +328,7 @@ export default function FichaPaciente() {
 }
 
     carregarFicha();
-  }, [id, IdUser]);
+  }, [id, IdUser, location.state]);
 
   async function exportarProntuario() {
   if (!paciente || exportando) return;
@@ -345,15 +366,7 @@ export default function FichaPaciente() {
 
   function iniciarEdicao() {
     if (!paciente) return;
-    setForm({
-      nome: paciente.nome_paciente ?? "",
-      nascimento: paciente.data_nascimento?.split("T")[0] ?? "",
-      genero: paciente.genero ?? "",
-      email: paciente.email ?? "",
-      telefone: formatarTelefone(paciente.telefone ?? ""),
-      endereco: paciente.endereco ?? "",
-      anamnese: paciente.anamnese ?? "",
-    });
+    setForm(formDePaciente(paciente));
     setFeedback(null);
     setEditando(true);
   }

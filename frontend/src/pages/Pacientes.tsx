@@ -808,7 +808,9 @@ async function reativarPaciente(paciente: Pacientes) {
                 role="menuitem"
                 onClick={() => {
                   setMenuAberto(null);
-                  console.log("Editar cadastro:", pacienteDoMenu.id);
+                  navigate(`/pacientes/${pacienteDoMenu.id}`, {
+                    state: { editar: true },
+                  });
                 }}
                 className={itemMenu}
               >

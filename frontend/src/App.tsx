@@ -93,6 +93,10 @@ export default function App() {
           <Route path="/evolucoes" element={<Evolucoes />} />
           <Route path="/novaevolucao" element={<NovaEvolucao />} />
           <Route path="/novoagendamento" element={<NovoAgendamento />} />
+          <Route
+            path="/editaragendamento/:id"
+            element={<NovoAgendamento />}
+          />
           <Route path="/evolucoespendentes" element={<EvolucoesPendentes />} />
         </Route>
 

@@ -1,8 +1,13 @@
 import Menu from "../components/Menu";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../lib/api";
 import { useEffect, useState } from "react";
 import { useUser } from "../context/UserContext";
+import {
+  dataDeHojeParaInput,
+  HORARIOS,
+  TIPOS_AGENDAMENTO,
+} from "../lib/agendamentos";
 
 interface Paciente {
   id: number;
@@ -10,47 +15,19 @@ interface Paciente {
   id_user: number;
 }
 
-const TIPOS = [
-  {
-    valor: "Atendimento",
-    descricao: "Sessão de fisioterapia",
-    icone: "medical_services",
-  },
-  {
-    valor: "Avaliação",
-    descricao: "Avaliação inicial",
-    icone: "assignment",
-  },
-];
-
-const HORARIOS = [
-  "08:00",
-  "09:00",
-  "10:00",
-  "11:00",
-  "12:00",
-  "13:00",
-  "14:00",
-  "15:00",
-  "16:00",
-  "17:00",
-];
-
-// O input type="date" exige o formato AAAA-MM-DD
-function dataDeHojeParaInput() {
-  const hoje = new Date();
-  return (
-    hoje.getFullYear() +
-    "-" +
-    String(hoje.getMonth() + 1).padStart(2, "0") +
-    "-" +
-    String(hoje.getDate()).padStart(2, "0")
-  );
+interface AgendamentoParaEdicao {
+  id: number;
+  paciente_id: number;
+  data_hora: string;
+  tipo: string;
+  observacao: string;
 }
 
 export default function NovoAgendamento() {
   const { IdUser } = useUser();
   const navigate = useNavigate();
+  const { id: idAgendamento } = useParams();
+  const editando = Boolean(idAgendamento);
 
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
   const [pacienteId, setPacienteId] = useState("");
@@ -60,6 +37,8 @@ export default function NovoAgendamento() {
   const [observacao, setObservacao] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState("");
+  const [carregandoAgendamento, setCarregandoAgendamento] =
+    useState(editando);
 
   useEffect(() => {
   async function carregarPacientes() {
@@ -74,8 +53,33 @@ export default function NovoAgendamento() {
     }
   }
 
+  async function carregarAgendamento() {
+    if (!IdUser || !idAgendamento) return;
+
+    setCarregandoAgendamento(true);
+    try {
+      const agendamento = await api<AgendamentoParaEdicao>(
+        `/agendamentos/${idAgendamento}`,
+      );
+      const [dataAgendamento, horaAgendamento] =
+        agendamento.data_hora.split("T");
+
+      setPacienteId(String(agendamento.paciente_id));
+      setTipo(agendamento.tipo);
+      setData(dataAgendamento ?? "");
+      setHora(horaAgendamento?.substring(0, 5) ?? "09:00");
+      setObservacao(agendamento.observacao ?? "");
+    } catch (e) {
+      console.error("Erro ao carregar o agendamento:", e);
+      setErro("Não foi possível carregar o agendamento.");
+    } finally {
+      setCarregandoAgendamento(false);
+    }
+  }
+
   carregarPacientes();
-}, [IdUser]);
+  carregarAgendamento();
+}, [IdUser, idAgendamento]);
 
   async function salvarAgendamento(e: React.FormEvent<HTMLFormElement>) {
   e.preventDefault();
@@ -88,20 +92,33 @@ export default function NovoAgendamento() {
 
   setSalvando(true);
 
+  const corpo = JSON.stringify({
+    paciente_id: Number(pacienteId),
+    data_hora: `${data}T${hora}:00`,
+    tipo,
+    observacao: observacao.trim(),
+  });
+
   try {
-    await api("/agendamentos", {
-      method: "POST",
-      body: JSON.stringify({
-        paciente_id: Number(pacienteId),
-        data_hora: `${data}T${hora}:00`,
-        tipo,
-        observacao: observacao.trim(),
-      }),
-    });
-    navigate("/agenda");
+    if (editando) {
+      await api(`/agendamentos/${idAgendamento}`, {
+        method: "PATCH",
+        body: corpo,
+      });
+    } else {
+      await api("/agendamentos", {
+        method: "POST",
+        body: corpo,
+      });
+    }
+    navigate(`/agenda?data=${data}`);
   } catch (e) {
     console.error("Erro ao salvar agendamento:", e);
-    setErro("Não foi possível salvar. Verifique os dados e tente novamente.");
+    setErro(
+      editando
+        ? "Não foi possível salvar as alterações. Verifique os dados e tente novamente."
+        : "Não foi possível salvar. Verifique os dados e tente novamente.",
+    );
   } finally {
     setSalvando(false);
   }
@@ -143,23 +160,27 @@ export default function NovoAgendamento() {
               <span className="material-symbols-outlined mx-1 text-base text-gray-400">
                 chevron_right
               </span>
-              <span className="font-semibold">Novo agendamento</span>
+              <span className="font-semibold">
+                {editando ? "Editar agendamento" : "Novo agendamento"}
+              </span>
             </nav>
 
             {/* Cabeçalho */}
             <header className="flex items-center gap-4">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary-dark sm:h-14 sm:w-14">
                 <span className="material-symbols-outlined text-2xl sm:text-3xl">
-                  calendar_add_on
+                  {editando ? "calendar_edit" : "calendar_add_on"}
                 </span>
               </div>
 
               <div>
                 <h2 className="text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl">
-                  Novo agendamento
+                  {editando ? "Editar agendamento" : "Novo agendamento"}
                 </h2>
                 <p className="mt-1 text-sm text-gray-600 sm:text-base">
-                  Preencha os dados para agendar um atendimento.
+                  {editando
+                    ? "Corrija os dados deste agendamento e salve as alterações."
+                    : "Preencha os dados para agendar um atendimento."}
                 </p>
               </div>
             </header>
@@ -167,6 +188,7 @@ export default function NovoAgendamento() {
             {/* Formulário */}
             <form
               onSubmit={salvarAgendamento}
+              aria-busy={carregandoAgendamento}
               className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5"
             >
               <div className="flex flex-col gap-6 p-4 sm:p-6 md:p-8">
@@ -236,7 +258,7 @@ export default function NovoAgendamento() {
                     aria-labelledby="rotulo-tipo"
                     className="grid grid-cols-1 gap-4 sm:grid-cols-2"
                   >
-                    {TIPOS.map((opcao) => {
+                    {TIPOS_AGENDAMENTO.map((opcao) => {
                       const selecionado = tipo === opcao.valor;
 
                       return (
@@ -362,14 +384,26 @@ export default function NovoAgendamento() {
 
                 <button
                   type="submit"
-                  disabled={salvando || pacientes.length === 0}
+                  disabled={
+                    salvando ||
+                    carregandoAgendamento ||
+                    pacientes.length === 0
+                  }
                   className="flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-primary-dark hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <span className="material-symbols-outlined text-[18px]">
-                    {salvando ? "progress_activity" : "calendar_check"}
+                    {salvando
+                      ? "progress_activity"
+                      : editando
+                        ? "save"
+                        : "calendar_check"}
                   </span>
 
-                  {salvando ? "Salvando..." : "Salvar agendamento"}
+                  {salvando
+                    ? "Salvando..."
+                    : editando
+                      ? "Salvar alterações"
+                      : "Salvar agendamento"}
                 </button>
               </div>
             </form>

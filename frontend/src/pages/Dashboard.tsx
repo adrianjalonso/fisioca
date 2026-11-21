@@ -5,6 +5,7 @@ import { useEffect, useState, useRef } from "react";
 import type { Agendamento } from "../types/types";
 import { useUser } from "../context/UserContext";
 import { primeiroNome } from "../lib/nome";
+import { chaveDiaDoAgendamento } from "../lib/agendamentos";
 import { Link, useNavigate } from "react-router-dom";
 
 
@@ -570,7 +571,14 @@ function completarNota(paciente: Pacientes, agendamento: AgendamentoPendente) {
                         </div>
 
                         <div className="hidden shrink-0 items-center gap-3 sm:flex">
-                          <button className="rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
+                          <button
+                            onClick={() =>
+                              navigate(
+                                `/agenda?data=${chaveDiaDoAgendamento(agendamento.data_hora)}&agendamento=${agendamento.id}`,
+                              )
+                            }
+                            className="rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                          >
                             Ver detalhes
                           </button>
                         </div>

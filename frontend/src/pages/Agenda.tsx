@@ -1,9 +1,20 @@
 import Menu from "../components/Menu";
 import { Skeleton } from "../components/Skeleton";
-import { Link } from "react-router-dom";
+import ModalAcoesAgendamento, {
+  type AgendamentoModal,
+} from "../components/ModalAcoesAgendamento";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../lib/api";
 import { useEffect, useState } from "react";
 import { useUser } from "../context/UserContext";
+import {
+  dataAPartirDeChave,
+  formatarChaveDia,
+  HORARIOS,
+  horaDoAgendamento,
+  STATUS_AGENDADO,
+  STATUS_CANCELADO,
+} from "../lib/agendamentos";
 
 interface Pacientes {
   id: number;
@@ -22,33 +33,6 @@ interface Agendamentos {
   pacientes: Pacientes | null;
 }
 
-const HORARIOS = [
-  "08:00",
-  "09:00",
-  "10:00",
-  "11:00",
-  "12:00",
-  "13:00",
-  "14:00",
-  "15:00",
-  "16:00",
-  "17:00",
-];
-
-function formatarChaveDia(data: Date) {
-  return (
-    data.getFullYear() +
-    "-" +
-    String(data.getMonth() + 1).padStart(2, "0") +
-    "-" +
-    String(data.getDate()).padStart(2, "0")
-  );
-}
-
-function horaDoAgendamento(dataHora: string) {
-  return dataHora.split("T")[1]?.substring(0, 5) ?? "";
-}
-
 function nomeDoPaciente(a: Agendamentos) {
   return a.pacientes
     ? `${a.pacientes.nome_paciente}`
@@ -59,9 +43,20 @@ export default function Agenda() {
   const hoje = new Date();
 
   const { IdUser } = useUser();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [agendamentos, setAgendamentos] = useState<Agendamentos[]>([]);
-  const [dataSelecionada, setDataSelecionada] = useState(hoje);
+  const [dataSelecionada, setDataSelecionada] = useState(() =>
+    dataAPartirDeChave(searchParams.get("data")),
+  );
   const [carregandoAgenda, setCarregandoAgenda] = useState(true);
+  const [erroAgenda, setErroAgenda] = useState("");
+  const [agendamentoSelecionado, setAgendamentoSelecionado] = useState<
+    number | null
+  >(() => {
+    const param = Number(searchParams.get("agendamento"));
+    return Number.isInteger(param) && param > 0 ? param : null;
+  });
 
   const dataDePesquisa = formatarChaveDia(dataSelecionada);
   const ehHoje = dataDePesquisa === formatarChaveDia(hoje);
@@ -79,8 +74,9 @@ export default function Agenda() {
 
   async function carregarAgenda() {
     setCarregandoAgenda(true);
+    setErroAgenda("");
     try {
-      const data = await api<any[]>("/agendamentos");
+      const data = await api<Agendamentos[]>("/agendamentos");
 
       const dadosFormatados = data.map((item) => ({
         ...item,
@@ -92,6 +88,7 @@ export default function Agenda() {
       setAgendamentos(dadosFormatados);
     } catch (e) {
       console.error("Erro ao carregar a agenda:", e);
+      setErroAgenda("Não foi possível carregar a agenda.");
     } finally {
       setCarregandoAgenda(false);
     }
@@ -100,11 +97,73 @@ export default function Agenda() {
   carregarAgenda();
 }, [IdUser]);
 
+  // Fecha o modal se o agendamento enviado por link não existir mais.
+  useEffect(() => {
+    if (agendamentoSelecionado === null || carregandoAgenda) return;
+    if (!agendamentos.some((a) => a.id === agendamentoSelecionado)) {
+      setAgendamentoSelecionado(null);
+    }
+  }, [agendamentos, agendamentoSelecionado, carregandoAgenda]);
+
+  function atualizarParametros(chaveDia: string, idAgendamento?: number) {
+    setSearchParams(
+      (anteriores) => {
+        const proximos = new URLSearchParams(anteriores);
+        proximos.set("data", chaveDia);
+        if (idAgendamento) {
+          proximos.set("agendamento", String(idAgendamento));
+        } else {
+          proximos.delete("agendamento");
+        }
+        return proximos;
+      },
+      { replace: true },
+    );
+  }
+
   function mudarDia(delta: number) {
     const novaData = new Date(dataSelecionada);
     novaData.setDate(novaData.getDate() + delta);
     setDataSelecionada(novaData);
+    setAgendamentoSelecionado(null);
+    atualizarParametros(formatarChaveDia(novaData));
   }
+
+  function abrirAgendamento(agendamento: Agendamentos) {
+    setAgendamentoSelecionado(agendamento.id);
+    atualizarParametros(dataDePesquisa, agendamento.id);
+  }
+
+  function fecharModal() {
+    setAgendamentoSelecionado(null);
+    atualizarParametros(dataDePesquisa);
+  }
+
+  async function cancelarAgendamento(agendamento: AgendamentoModal) {
+    await api(`/agendamentos/${agendamento.id}/cancelar`, { method: "PATCH" });
+    setAgendamentos((lista) =>
+      lista.map((a) =>
+        a.id === agendamento.id ? { ...a, status: STATUS_CANCELADO } : a,
+      ),
+    );
+  }
+
+  async function reativarAgendamento(agendamento: AgendamentoModal) {
+    await api(`/agendamentos/${agendamento.id}/reativar`, { method: "PATCH" });
+    setAgendamentos((lista) =>
+      lista.map((a) =>
+        a.id === agendamento.id ? { ...a, status: STATUS_AGENDADO } : a,
+      ),
+    );
+  }
+
+  async function excluirAgendamento(agendamento: AgendamentoModal) {
+    await api(`/agendamentos/${agendamento.id}`, { method: "DELETE" });
+    setAgendamentos((lista) => lista.filter((a) => a.id !== agendamento.id));
+  }
+
+  const agendamentoAberto =
+    agendamentos.find((a) => a.id === agendamentoSelecionado) ?? null;
 
   const diaSemana = dataSelecionada.toLocaleDateString("pt-BR", {
     weekday: "long",
@@ -140,6 +199,16 @@ export default function Agenda() {
               </span>
               <span className="font-semibold">Agenda</span>
             </nav>
+
+            {erroAgenda && (
+              <div
+                role="alert"
+                className="flex items-start gap-3 rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600 ring-1 ring-red-100"
+              >
+                <span className="material-symbols-outlined text-xl">error</span>
+                {erroAgenda}
+              </div>
+            )}
 
             {/* Cabeçalho */}
             <header className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
@@ -226,7 +295,12 @@ export default function Agenda() {
                   </div>
 
                   <button
-                    onClick={() => setDataSelecionada(new Date(hoje))}
+                    onClick={() => {
+                      const novoHoje = new Date(hoje);
+                      setDataSelecionada(novoHoje);
+                      setAgendamentoSelecionado(null);
+                      atualizarParametros(formatarChaveDia(novoHoje));
+                    }}
                     disabled={ehHoje}
                     className="shrink-0 rounded-lg bg-primary/10 px-3 py-2 text-xs font-semibold text-primary-dark transition-colors hover:bg-primary/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:cursor-default disabled:bg-transparent disabled:text-gray-400 sm:px-4 sm:text-sm"
                   >
@@ -281,7 +355,17 @@ export default function Agenda() {
                             return (
                               <div
                                 key={agendamento.id}
-                                className={`flex cursor-pointer flex-col justify-center gap-1 rounded-xl border-l-4 px-4 py-3 transition-shadow hover:shadow-md ${
+                                role="button"
+                                tabIndex={0}
+                                aria-label={`Ver ações do agendamento de ${nomeDoPaciente(agendamento)} às ${horaDoAgendamento(agendamento.data_hora)}`}
+                                onClick={() => abrirAgendamento(agendamento)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    abrirAgendamento(agendamento);
+                                  }
+                                }}
+                                className={`flex cursor-pointer flex-col justify-center gap-1 rounded-xl border-l-4 px-4 py-3 transition-shadow hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
                                   isCancelado
                                     ? "border-gray-300 bg-gray-100 opacity-60"
                                     : "border-primary bg-primary/10"
@@ -399,7 +483,17 @@ export default function Agenda() {
                       return (
                         <div
                           key={agendamento.id}
-                          className={`flex gap-3 rounded-xl border border-gray-100 bg-gray-50/60 p-3 transition-colors hover:bg-primary/5 ${
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`Ver ações do agendamento de ${nomeDoPaciente(agendamento)} às ${horaDoAgendamento(agendamento.data_hora)}`}
+                          onClick={() => abrirAgendamento(agendamento)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              abrirAgendamento(agendamento);
+                            }
+                          }}
+                          className={`flex cursor-pointer gap-3 rounded-xl border border-gray-100 bg-gray-50/60 p-3 transition-colors hover:bg-primary/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
                             isCancelado ? "opacity-60" : ""
                           }`}
                         >
@@ -449,6 +543,17 @@ export default function Agenda() {
           </div>
         </div>
       </main>
+
+      <ModalAcoesAgendamento
+        agendamento={agendamentoAberto}
+        onClose={fecharModal}
+        onEditar={(agendamento) =>
+          navigate(`/editaragendamento/${agendamento.id}`)
+        }
+        onCancelar={cancelarAgendamento}
+        onReativar={reativarAgendamento}
+        onExcluir={excluirAgendamento}
+      />
     </div>
   );
 }
