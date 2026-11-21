@@ -10,8 +10,10 @@ import { useUser } from "../context/UserContext";
 import {
   dataAPartirDeChave,
   formatarChaveDia,
-  HORARIOS,
+  HORA_INICIO,
+  HORAS_LINHA_DO_TEMPO,
   horaDoAgendamento,
+  minutosDoAgendamento,
   STATUS_AGENDADO,
   STATUS_CANCELADO,
 } from "../lib/agendamentos";
@@ -37,6 +39,70 @@ function nomeDoPaciente(a: Agendamentos) {
   return a.pacientes
     ? `${a.pacientes.nome_paciente}`
     : "Paciente desconhecido";
+}
+
+// 180px por hora = 15px a cada 5 minutos.
+const ALTURA_HORA = 180;
+const ALTURA_CARTAO = 76;
+
+type AgendamentoComMinutos = {
+  agendamento: Agendamentos;
+  minutos: number;
+};
+
+type AgendamentoPosicionado = {
+  agendamento: Agendamentos;
+  top: number;
+  coluna: number;
+  colunas: number;
+};
+
+// Posiciona na linha do tempo contínua (07:00 no topo) e reparte a largura
+// entre cartões que se sobreporiam verticalmente.
+function posicionarNaLinhaDoTempo(agendamentos: Agendamentos[]) {
+  const inicio = HORA_INICIO * 60;
+  const fim = inicio + HORAS_LINHA_DO_TEMPO.length * 60;
+
+  const itens = agendamentos
+    .map((agendamento) => ({
+      agendamento,
+      minutos: minutosDoAgendamento(agendamento.data_hora),
+    }))
+    .filter(
+      (item): item is AgendamentoComMinutos =>
+        item.minutos !== null && item.minutos >= inicio && item.minutos < fim,
+    )
+    .sort((a, b) => a.minutos - b.minutos);
+
+  const posicionados: AgendamentoPosicionado[] = [];
+  let grupo: { agendamento: Agendamentos; top: number }[] = [];
+
+  function fecharGrupo() {
+    grupo.forEach((item, indice) => {
+      posicionados.push({
+        agendamento: item.agendamento,
+        top: item.top,
+        coluna: indice,
+        colunas: grupo.length,
+      });
+    });
+    grupo = [];
+  }
+
+  for (const item of itens) {
+    const top = ((item.minutos - inicio) / 60) * ALTURA_HORA;
+    const ultimo = grupo[grupo.length - 1];
+
+    if (ultimo && top - ultimo.top < ALTURA_CARTAO) {
+      grupo.push({ agendamento: item.agendamento, top });
+    } else {
+      fecharGrupo();
+      grupo = [{ agendamento: item.agendamento, top }];
+    }
+  }
+  fecharGrupo();
+
+  return posicionados;
 }
 
 export default function Agenda() {
@@ -68,6 +134,8 @@ export default function Agenda() {
       return dataDoAgendamento === dataDePesquisa;
     })
     .sort((a, b) => a.data_hora.localeCompare(b.data_hora));
+
+  const agendamentosPosicionados = posicionarNaLinhaDoTempo(agendamentosDoDia);
 
   useEffect(() => {
   if (!IdUser) return;
@@ -310,47 +378,67 @@ export default function Agenda() {
 
                 <div className="flex-1 overflow-y-auto px-4 pb-4" aria-busy={carregandoAgenda}>
                   {carregandoAgenda ? (
-                    <div className="flex flex-col gap-3 pt-4">
-                      {[0, 1, 2, 3, 4].map((i) => (
-                        <div key={i} className="flex min-h-24 border-t border-gray-100 pt-2">
+                    <div className="flex flex-col pt-4">
+                      {HORAS_LINHA_DO_TEMPO.map((hora) => (
+                        <div key={hora} className="flex border-t border-gray-100">
                           <div className="w-16 shrink-0 pt-3">
                             <Skeleton className="h-3 w-10" />
                           </div>
-                          <div className="flex flex-1 flex-col gap-2 border-l border-gray-100 p-2">
-                            <Skeleton className="h-16 w-full rounded-xl" />
+                          <div className="relative flex-1 border-l border-gray-100">
+                            <div className="absolute left-2 right-2 top-6">
+                              <Skeleton className="h-16 w-full rounded-xl" />
+                            </div>
+                            <div className="h-[180px]" />
                           </div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    HORARIOS.map((hora) => {
-                    // Agrupa pela hora cheia para não esconder atendimentos como 08:30
-                    const agendamentosDaHora = agendamentosDoDia.filter(
-                      (a) => horaDoAgendamento(a.data_hora).substring(0, 2) === hora.substring(0, 2),
-                    );
-                    const horaAgora = ehHoje && hora.substring(0, 2) === horaAtual;
+                    <div className="flex border-t border-gray-100">
+                      <div className="w-16 shrink-0">
+                        {HORAS_LINHA_DO_TEMPO.map((hora) => {
+                          const horaAgora =
+                            ehHoje && hora.slice(0, 2) === horaAtual;
 
-                    return (
-                      <div
-                        key={hora}
-                        className={`flex min-h-24 border-t border-gray-100 ${
-                          horaAgora ? "bg-primary/5" : ""
-                        }`}
-                      >
-                        <div
-                          className={`w-16 shrink-0 pt-3 text-xs tabular-nums ${
-                            horaAgora
-                              ? "font-bold text-primary-dark"
-                              : "font-medium text-gray-400"
-                          }`}
-                        >
-                          {hora}
-                        </div>
+                          return (
+                            <div
+                              key={hora}
+                              className={`flex h-[180px] pt-3 text-xs tabular-nums ${
+                                horaAgora
+                                  ? "font-bold text-primary-dark"
+                                  : "font-medium text-gray-400"
+                              }`}
+                            >
+                              {hora}
+                            </div>
+                          );
+                        })}
+                      </div>
 
-                        <div className="flex flex-1 flex-col gap-2 border-l border-gray-100 p-2">
-                          {agendamentosDaHora.map((agendamento) => {
+                      <div className="relative flex-1 border-l border-gray-100">
+                        {HORAS_LINHA_DO_TEMPO.map((hora) => (
+                          <div
+                            key={hora}
+                            className={`relative h-[180px] border-b border-gray-100 ${
+                              ehHoje && hora.slice(0, 2) === horaAtual
+                                ? "bg-primary/5"
+                                : ""
+                            }`}
+                          >
+                            {[1, 2, 3].map((parte) => (
+                              <div
+                                key={parte}
+                                className="pointer-events-none absolute left-0 right-0 border-t border-dashed border-gray-100"
+                                style={{ top: `${parte * 45}px` }}
+                              />
+                            ))}
+                          </div>
+                        ))}
+
+                        {agendamentosPosicionados.map(
+                          ({ agendamento, top, coluna, colunas }) => {
                             const isCancelado =
-                              agendamento.status === "Cancelado";
+                              agendamento.status === STATUS_CANCELADO;
 
                             return (
                               <div
@@ -365,7 +453,13 @@ export default function Agenda() {
                                     abrirAgendamento(agendamento);
                                   }
                                 }}
-                                className={`flex cursor-pointer flex-col justify-center gap-1 rounded-xl border-l-4 px-4 py-3 transition-shadow hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
+                                style={{
+                                  top: `${top}px`,
+                                  left: `calc(${(coluna / colunas) * 100}% + 4px)`,
+                                  width: `calc(${100 / colunas}% - 8px)`,
+                                  maxHeight: `${ALTURA_CARTAO - 6}px`,
+                                }}
+                                className={`absolute z-10 flex cursor-pointer flex-col justify-center gap-1 overflow-hidden rounded-xl border-l-4 px-3 py-2 transition-shadow hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
                                   isCancelado
                                     ? "border-gray-300 bg-gray-100 opacity-60"
                                     : "border-primary bg-primary/10"
@@ -415,11 +509,13 @@ export default function Agenda() {
                                 </span>
                               </div>
                             );
-                          })}
-                        </div>
+                          },
+                        )}
+
+                        {/* Espaço extra para cartões no fim da última hora. */}
+                        <div className="h-[70px]" aria-hidden="true" />
                       </div>
-                    );
-                  })
+                    </div>
                   )}
                 </div>
               </section>

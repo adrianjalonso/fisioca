@@ -40,6 +40,21 @@ export default function NovoAgendamento() {
   const [carregandoAgendamento, setCarregandoAgendamento] =
     useState(editando);
 
+  // Edições antigas podem ter minutos fora da grade de 5 em 5: preserva o valor.
+  const horariosDisponiveis =
+    hora && !HORARIOS.includes(hora) ? [hora, ...HORARIOS].sort() : HORARIOS;
+
+  // Agrupa as 169 opções por hora para o select não ficar interminável.
+  const horariosAgrupados = horariosDisponiveis.reduce<
+    Record<string, string[]>
+  >((grupos, horario) => {
+    const rotulo = `${horario.slice(0, 2)}h`;
+    const doGrupo = grupos[rotulo] ?? [];
+    doGrupo.push(horario);
+    grupos[rotulo] = doGrupo;
+    return grupos;
+  }, {});
+
   useEffect(() => {
   async function carregarPacientes() {
     if (!IdUser) return;
@@ -339,11 +354,17 @@ export default function NovoAgendamento() {
                         required
                         className={`${campo} appearance-none pl-11 pr-10 tabular-nums`}
                       >
-                        {HORARIOS.map((horario) => (
-                          <option key={horario} value={horario}>
-                            {horario}
-                          </option>
-                        ))}
+                        {Object.entries(horariosAgrupados).map(
+                          ([rotulo, horarios]) => (
+                            <optgroup key={rotulo} label={rotulo}>
+                              {horarios.map((horario) => (
+                                <option key={horario} value={horario}>
+                                  {horario}
+                                </option>
+                              ))}
+                            </optgroup>
+                          ),
+                        )}
                       </select>
                       <span className="material-symbols-outlined pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
                         expand_more

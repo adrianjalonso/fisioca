@@ -13,18 +13,24 @@ export const TIPOS_AGENDAMENTO = [
   },
 ] as const
 
-export const HORARIOS = [
-  "08:00",
-  "09:00",
-  "10:00",
-  "11:00",
-  "12:00",
-  "13:00",
-  "14:00",
-  "15:00",
-  "16:00",
-  "17:00",
-]
+export const HORA_INICIO = 7
+export const HORA_FIM = 21
+export const INTERVALO_MINUTOS = 5
+
+// 07:00 às 21:00, de 5 em 5 minutos (169 opções).
+export const HORARIOS = Array.from(
+  { length: ((HORA_FIM - HORA_INICIO) * 60) / INTERVALO_MINUTOS + 1 },
+  (_, i) => {
+    const minutos = HORA_INICIO * 60 + i * INTERVALO_MINUTOS
+    return `${pad(Math.floor(minutos / 60))}:${pad(minutos % 60)}`
+  },
+)
+
+// Linhas da Agenda: uma por hora, da abertura ao fechamento.
+export const HORAS_LINHA_DO_TEMPO = Array.from(
+  { length: HORA_FIM - HORA_INICIO + 1 },
+  (_, i) => `${pad(HORA_INICIO + i)}:00`,
+)
 
 export const STATUS_AGENDADO = "Agendado"
 export const STATUS_CANCELADO = "Cancelado"
@@ -56,4 +62,12 @@ export function chaveDiaDoAgendamento(dataHora: string) {
 
 export function horaDoAgendamento(dataHora: string) {
   return dataHora.split("T")[1]?.substring(0, 5) ?? ""
+}
+
+// Minutos desde a meia-noite, usados para posicionar o cartão na linha do tempo.
+export function minutosDoAgendamento(dataHora: string) {
+  const [hora, minuto] = horaDoAgendamento(dataHora).split(":").map(Number)
+  return Number.isFinite(hora) && Number.isFinite(minuto)
+    ? hora * 60 + minuto
+    : null
 }
