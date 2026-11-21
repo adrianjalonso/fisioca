@@ -5,7 +5,8 @@ import { useEffect, useState } from "react";
 import { useUser } from "../context/UserContext";
 import {
   dataDeHojeParaInput,
-  HORARIOS,
+  formatarHoraDigitada,
+  horaDentroDoExpediente,
   TIPOS_AGENDAMENTO,
 } from "../lib/agendamentos";
 
@@ -23,6 +24,8 @@ interface AgendamentoParaEdicao {
   observacao: string;
 }
 
+const MENSAGEM_HORA_INVALIDA = "Informe um horário entre 07:00 e 21:59.";
+
 export default function NovoAgendamento() {
   const { IdUser } = useUser();
   const navigate = useNavigate();
@@ -39,21 +42,10 @@ export default function NovoAgendamento() {
   const [erro, setErro] = useState("");
   const [carregandoAgendamento, setCarregandoAgendamento] =
     useState(editando);
+  const [horaTocada, setHoraTocada] = useState(false);
 
-  // Edições antigas podem ter minutos fora da grade de 5 em 5: preserva o valor.
-  const horariosDisponiveis =
-    hora && !HORARIOS.includes(hora) ? [hora, ...HORARIOS].sort() : HORARIOS;
-
-  // Agrupa as 169 opções por hora para o select não ficar interminável.
-  const horariosAgrupados = horariosDisponiveis.reduce<
-    Record<string, string[]>
-  >((grupos, horario) => {
-    const rotulo = `${horario.slice(0, 2)}h`;
-    const doGrupo = grupos[rotulo] ?? [];
-    doGrupo.push(horario);
-    grupos[rotulo] = doGrupo;
-    return grupos;
-  }, {});
+  const horaValida = horaDentroDoExpediente(hora);
+  const erroHora = horaTocada && !horaValida ? MENSAGEM_HORA_INVALIDA : "";
 
   useEffect(() => {
   async function carregarPacientes() {
@@ -102,6 +94,12 @@ export default function NovoAgendamento() {
 
   if (!pacienteId || !data || !hora || !tipo) {
     setErro("Preencha todos os campos obrigatórios.");
+    return;
+  }
+
+  setHoraTocada(true);
+  if (!horaValida) {
+    setErro(MENSAGEM_HORA_INVALIDA);
     return;
   }
 
@@ -347,29 +345,39 @@ export default function NovoAgendamento() {
                       <span className="material-symbols-outlined pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[20px] text-gray-400">
                         schedule
                       </span>
-                      <select
+                      <input
                         id="hora"
+                        type="text"
+                        inputMode="numeric"
+                        autoComplete="off"
+                        maxLength={5}
+                        placeholder="08:30"
                         value={hora}
-                        onChange={(e) => setHora(e.target.value)}
+                        onChange={(e) =>
+                          setHora(formatarHoraDigitada(e.target.value))
+                        }
+                        onBlur={() => setHoraTocada(true)}
+                        aria-invalid={Boolean(erroHora)}
+                        aria-describedby={erroHora ? "erro-hora" : "ajuda-hora"}
                         required
-                        className={`${campo} appearance-none pl-11 pr-10 tabular-nums`}
-                      >
-                        {Object.entries(horariosAgrupados).map(
-                          ([rotulo, horarios]) => (
-                            <optgroup key={rotulo} label={rotulo}>
-                              {horarios.map((horario) => (
-                                <option key={horario} value={horario}>
-                                  {horario}
-                                </option>
-                              ))}
-                            </optgroup>
-                          ),
-                        )}
-                      </select>
-                      <span className="material-symbols-outlined pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
-                        expand_more
-                      </span>
+                        className={`${campo} pl-11 tabular-nums ${
+                          erroHora ? "ring-red-400 focus:ring-red-400" : ""
+                        }`}
+                      />
                     </div>
+                    {erroHora ? (
+                      <p
+                        id="erro-hora"
+                        role="alert"
+                        className="text-xs font-medium text-red-500"
+                      >
+                        {erroHora}
+                      </p>
+                    ) : (
+                      <p id="ajuda-hora" className="text-xs text-gray-400">
+                        07:00 – 21:59
+                      </p>
+                    )}
                   </div>
                 </div>
 

@@ -71,3 +71,21 @@ export function minutosDoAgendamento(dataHora: string) {
     ? hora * 60 + minuto
     : null
 }
+
+// Campo HH:mm: aceita só dígitos e insere o ":" após as duas primeiras casas.
+export function formatarHoraDigitada(valor: string) {
+  const digitos = valor.replace(/\D/g, "").slice(0, 4)
+  return digitos.length <= 2 ? digitos : `${digitos.slice(0, 2)}:${digitos.slice(2)}`
+}
+
+// Validação do formulário: qualquer minuto entre 07:00 e 21:59.
+export function horaDentroDoExpediente(valor: string) {
+  const parte = /^(\d{2}):(\d{2})$/.exec(valor)
+  if (!parte) return false
+
+  const hora = Number(parte[1])
+  const minuto = Number(parte[2])
+  return (
+    hora >= HORA_INICIO && hora <= HORA_FIM && minuto >= 0 && minuto <= 59
+  )
+}
