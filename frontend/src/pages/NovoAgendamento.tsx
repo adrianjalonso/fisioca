@@ -169,7 +169,7 @@ export default function NovoAgendamento() {
             <header className="flex items-center gap-4">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary-dark sm:h-14 sm:w-14">
                 <span className="material-symbols-outlined text-2xl sm:text-3xl">
-                  {editando ? "calendar_edit" : "calendar_add_on"}
+                  {editando ? "edit_calendar" : "calendar_add_on"}
                 </span>
               </div>
 
