@@ -89,3 +89,38 @@ export function horaDentroDoExpediente(valor: string) {
     hora >= HORA_INICIO && hora <= HORA_FIM && minuto >= 0 && minuto <= 59
   )
 }
+
+function minutosDaHora(valor: string) {
+  const parte = /^(\d{2}):(\d{2})$/.exec(valor)
+  return parte ? Number(parte[1]) * 60 + Number(parte[2]) : null
+}
+
+// Padrão de 1 hora de atendimento, com teto em 21:59.
+export function somaUmaHora(hora: string) {
+  const atual = minutosDaHora(hora)
+  if (atual === null) return ""
+
+  const limite = HORA_FIM * 60 + 59
+  const fim = Math.min(atual + 60, limite)
+  return `${pad(Math.floor(fim / 60))}:${pad(fim % 60)}`
+}
+
+export function terminoDepoisDoInicio(inicio: string, fim: string) {
+  const inicioMinutos = minutosDaHora(inicio)
+  const fimMinutos = minutosDaHora(fim)
+  return (
+    inicioMinutos !== null &&
+    fimMinutos !== null &&
+    fimMinutos > inicioMinutos
+  )
+}
+
+export function duracaoEmMinutos(inicio: string, fim: string) {
+  const inicioMinutos = minutosDaHora(inicio)
+  const fimMinutos = minutosDaHora(fim)
+  return inicioMinutos !== null &&
+    fimMinutos !== null &&
+    fimMinutos > inicioMinutos
+    ? fimMinutos - inicioMinutos
+    : 0
+}

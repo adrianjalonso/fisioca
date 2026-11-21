@@ -4,6 +4,7 @@ import { horaDoAgendamento } from "../lib/agendamentos"
 export type AgendamentoModal = {
   id: number
   data_hora: string
+  data_fim: string
   tipo: string
   status: string
   observacao: string
@@ -79,6 +80,8 @@ export default function ModalAcoesAgendamento({
     "pt-BR",
     { day: "numeric", month: "long", year: "numeric" }
   )
+  const inicio = horaDoAgendamento(agendamento.data_hora)
+  const fim = horaDoAgendamento(agendamento.data_fim) || inicio
 
   async function executar(acao: Acao) {
     if (!agendamento || processando) return
@@ -128,7 +131,7 @@ export default function ModalAcoesAgendamento({
               Detalhes do agendamento
             </h2>
             <p className="mt-0.5 truncate text-sm text-gray-500">
-              {dataFormatada} às {horaDoAgendamento(agendamento.data_hora)}
+              {dataFormatada} das {inicio} às {fim}
             </p>
           </div>
 

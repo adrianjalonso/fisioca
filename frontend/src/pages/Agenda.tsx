@@ -29,6 +29,7 @@ interface Agendamentos {
   id: number;
   paciente_id: number;
   data_hora: string;
+  data_fim: string;
   tipo: string;
   status: string;
   observacao: string;
@@ -43,31 +44,41 @@ function nomeDoPaciente(a: Agendamentos) {
 
 // 180px por hora = 15px a cada 5 minutos.
 const ALTURA_HORA = 180;
-const ALTURA_CARTAO = 76;
+const ALTURA_MINIMA_CARTAO = 45;
 
 type AgendamentoComMinutos = {
   agendamento: Agendamentos;
   minutos: number;
+  altura: number;
 };
 
 type AgendamentoPosicionado = {
   agendamento: Agendamentos;
   top: number;
+  altura: number;
   coluna: number;
   colunas: number;
 };
 
-// Posiciona na linha do tempo contínua (07:00 no topo) e reparte a largura
-// entre cartões que se sobreporiam verticalmente.
+// Posiciona na linha do tempo contínua (07:00 no topo), dimensiona o cartão
+// pela duração e reparte a largura entre cartões que se sobrepõem.
 function posicionarNaLinhaDoTempo(agendamentos: Agendamentos[]) {
   const inicio = HORA_INICIO * 60;
   const fim = inicio + HORAS_LINHA_DO_TEMPO.length * 60;
 
   const itens = agendamentos
-    .map((agendamento) => ({
-      agendamento,
-      minutos: minutosDoAgendamento(agendamento.data_hora),
-    }))
+    .map((agendamento) => {
+      const minutos = minutosDoAgendamento(agendamento.data_hora)
+      const fimMinutos = minutosDoAgendamento(agendamento.data_fim)
+      const termino = Math.min(fimMinutos ?? (minutos ?? inicio) + 60, fim)
+      const duracao = minutos !== null ? Math.max(termino - minutos, 15) : 0
+
+      return {
+        agendamento,
+        minutos,
+        altura: Math.max((duracao / 60) * ALTURA_HORA, ALTURA_MINIMA_CARTAO),
+      }
+    })
     .filter(
       (item): item is AgendamentoComMinutos =>
         item.minutos !== null && item.minutos >= inicio && item.minutos < fim,
@@ -75,13 +86,14 @@ function posicionarNaLinhaDoTempo(agendamentos: Agendamentos[]) {
     .sort((a, b) => a.minutos - b.minutos);
 
   const posicionados: AgendamentoPosicionado[] = [];
-  let grupo: { agendamento: Agendamentos; top: number }[] = [];
+  let grupo: { agendamento: Agendamentos; top: number; bottom: number }[] = [];
 
   function fecharGrupo() {
     grupo.forEach((item, indice) => {
       posicionados.push({
         agendamento: item.agendamento,
         top: item.top,
+        altura: item.bottom - item.top,
         coluna: indice,
         colunas: grupo.length,
       });
@@ -91,13 +103,16 @@ function posicionarNaLinhaDoTempo(agendamentos: Agendamentos[]) {
 
   for (const item of itens) {
     const top = ((item.minutos - inicio) / 60) * ALTURA_HORA;
-    const ultimo = grupo[grupo.length - 1];
+    const bottom = top + item.altura;
+    const ocupadoAte = grupo.length
+      ? Math.max(...grupo.map((ocupante) => ocupante.bottom))
+      : 0;
 
-    if (ultimo && top - ultimo.top < ALTURA_CARTAO) {
-      grupo.push({ agendamento: item.agendamento, top });
+    if (grupo.length && top < ocupadoAte) {
+      grupo.push({ agendamento: item.agendamento, top, bottom });
     } else {
       fecharGrupo();
-      grupo = [{ agendamento: item.agendamento, top }];
+      grupo = [{ agendamento: item.agendamento, top, bottom }];
     }
   }
   fecharGrupo();
@@ -436,16 +451,23 @@ export default function Agenda() {
                         ))}
 
                         {agendamentosPosicionados.map(
-                          ({ agendamento, top, coluna, colunas }) => {
+                          ({ agendamento, top, altura, coluna, colunas }) => {
                             const isCancelado =
                               agendamento.status === STATUS_CANCELADO;
+                            const inicioHora = horaDoAgendamento(
+                              agendamento.data_hora,
+                            );
+                            const fimHora =
+                              horaDoAgendamento(agendamento.data_fim) ||
+                              inicioHora;
+                            const periodo = `${inicioHora} – ${fimHora}`;
 
                             return (
                               <div
                                 key={agendamento.id}
                                 role="button"
                                 tabIndex={0}
-                                aria-label={`Ver ações do agendamento de ${nomeDoPaciente(agendamento)} às ${horaDoAgendamento(agendamento.data_hora)}`}
+                                aria-label={`Ver ações do agendamento de ${nomeDoPaciente(agendamento)} das ${inicioHora} às ${fimHora}`}
                                 onClick={() => abrirAgendamento(agendamento)}
                                 onKeyDown={(e) => {
                                   if (e.key === "Enter" || e.key === " ") {
@@ -457,7 +479,7 @@ export default function Agenda() {
                                   top: `${top}px`,
                                   left: `calc(${(coluna / colunas) * 100}% + 4px)`,
                                   width: `calc(${100 / colunas}% - 8px)`,
-                                  maxHeight: `${ALTURA_CARTAO - 6}px`,
+                                  height: `${altura}px`,
                                 }}
                                 className={`absolute z-10 flex cursor-pointer flex-col justify-center gap-1 overflow-hidden rounded-xl border-l-4 px-3 py-2 transition-shadow hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
                                   isCancelado
@@ -474,7 +496,7 @@ export default function Agenda() {
                                           : "text-primary-dark"
                                       }`}
                                     >
-                                      {horaDoAgendamento(agendamento.data_hora)}
+                                      {periodo}
                                     </span>
                                     <span
                                       className={`truncate font-bold ${

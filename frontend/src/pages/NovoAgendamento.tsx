@@ -5,9 +5,12 @@ import { useEffect, useState } from "react";
 import { useUser } from "../context/UserContext";
 import {
   dataDeHojeParaInput,
+  duracaoEmMinutos,
   formatarHoraDigitada,
   horaDentroDoExpediente,
+  somaUmaHora,
   TIPOS_AGENDAMENTO,
+  terminoDepoisDoInicio,
 } from "../lib/agendamentos";
 
 interface Paciente {
@@ -20,11 +23,13 @@ interface AgendamentoParaEdicao {
   id: number;
   paciente_id: number;
   data_hora: string;
+  data_fim: string;
   tipo: string;
   observacao: string;
 }
 
 const MENSAGEM_HORA_INVALIDA = "Informe um horário entre 07:00 e 21:59.";
+const MENSAGEM_TERMINO_INVALIDO = "O término deve ser depois do início.";
 
 export default function NovoAgendamento() {
   const { IdUser } = useUser();
@@ -37,15 +42,37 @@ export default function NovoAgendamento() {
   const [tipo, setTipo] = useState("Atendimento");
   const [data, setData] = useState(dataDeHojeParaInput());
   const [hora, setHora] = useState("09:00");
+  const [horaFim, setHoraFim] = useState(() => somaUmaHora("09:00"));
   const [observacao, setObservacao] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState("");
   const [carregandoAgendamento, setCarregandoAgendamento] =
     useState(editando);
   const [horaTocada, setHoraTocada] = useState(false);
+  const [horaFimTocada, setHoraFimTocada] = useState(false);
+  const [horaFimManual, setHoraFimManual] = useState(false);
 
   const horaValida = horaDentroDoExpediente(hora);
+  const horaFimValida = horaDentroDoExpediente(horaFim);
+  const periodoValido =
+    horaValida && horaFimValida && terminoDepoisDoInicio(hora, horaFim);
+
   const erroHora = horaTocada && !horaValida ? MENSAGEM_HORA_INVALIDA : "";
+  const erroHoraFim = horaFimTocada
+    ? !horaFimValida
+      ? MENSAGEM_HORA_INVALIDA
+      : horaValida && !terminoDepoisDoInicio(hora, horaFim)
+        ? MENSAGEM_TERMINO_INVALIDO
+        : ""
+    : "";
+
+  const minutosAtendimento = duracaoEmMinutos(hora, horaFim);
+  const duracaoTexto =
+    minutosAtendimento === 0
+      ? "—"
+      : minutosAtendimento % 60 === 0
+        ? `${minutosAtendimento / 60}h`
+        : `${minutosAtendimento} min`;
 
   useEffect(() => {
   async function carregarPacientes() {
@@ -70,11 +97,17 @@ export default function NovoAgendamento() {
       );
       const [dataAgendamento, horaAgendamento] =
         agendamento.data_hora.split("T");
+      const horaCarregada = horaAgendamento?.substring(0, 5) ?? "09:00";
+      const fimCarregado =
+        agendamento.data_fim?.split("T")[1]?.substring(0, 5) ??
+        somaUmaHora(horaCarregada);
 
       setPacienteId(String(agendamento.paciente_id));
       setTipo(agendamento.tipo);
       setData(dataAgendamento ?? "");
-      setHora(horaAgendamento?.substring(0, 5) ?? "09:00");
+      setHora(horaCarregada);
+      setHoraFim(fimCarregado);
+      setHoraFimManual(fimCarregado !== somaUmaHora(horaCarregada));
       setObservacao(agendamento.observacao ?? "");
     } catch (e) {
       console.error("Erro ao carregar o agendamento:", e);
@@ -92,14 +125,19 @@ export default function NovoAgendamento() {
   e.preventDefault();
   setErro("");
 
-  if (!pacienteId || !data || !hora || !tipo) {
+  if (!pacienteId || !data || !hora || !horaFim || !tipo) {
     setErro("Preencha todos os campos obrigatórios.");
     return;
   }
 
   setHoraTocada(true);
-  if (!horaValida) {
+  setHoraFimTocada(true);
+  if (!horaValida || !horaFimValida) {
     setErro(MENSAGEM_HORA_INVALIDA);
+    return;
+  }
+  if (!periodoValido) {
+    setErro(MENSAGEM_TERMINO_INVALIDO);
     return;
   }
 
@@ -108,6 +146,7 @@ export default function NovoAgendamento() {
   const corpo = JSON.stringify({
     paciente_id: Number(pacienteId),
     data_hora: `${data}T${hora}:00`,
+    data_fim: `${data}T${horaFim}:00`,
     tipo,
     observacao: observacao.trim(),
   });
@@ -136,6 +175,17 @@ export default function NovoAgendamento() {
     setSalvando(false);
   }
 }
+
+  function mudarHoraInicio(valor: string) {
+    const formatada = formatarHoraDigitada(valor);
+    setHora(formatada);
+    if (!horaFimManual) setHoraFim(somaUmaHora(formatada));
+  }
+
+  function mudarHoraFim(valor: string) {
+    setHoraFimManual(true);
+    setHoraFim(formatarHoraDigitada(valor));
+  }
 
   const campo =
     "w-full rounded-xl border-none bg-gray-50 px-4 py-3 text-sm text-gray-800 ring-1 ring-gray-200 outline-none transition placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-primary";
@@ -319,8 +369,8 @@ export default function NovoAgendamento() {
                   </div>
                 </div>
 
-                {/* Data e horário */}
-                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                {/* Data e período */}
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
                   <div className="flex flex-col gap-2">
                     <label htmlFor="data" className={rotulo}>
                       Data <span className="text-red-500">*</span>
@@ -338,7 +388,7 @@ export default function NovoAgendamento() {
 
                   <div className="flex flex-col gap-2">
                     <label htmlFor="hora" className={rotulo}>
-                      Horário <span className="text-red-500">*</span>
+                      Início <span className="text-red-500">*</span>
                     </label>
 
                     <div className="relative">
@@ -351,11 +401,9 @@ export default function NovoAgendamento() {
                         inputMode="numeric"
                         autoComplete="off"
                         maxLength={5}
-                        placeholder="08:30"
+                        placeholder="08:00"
                         value={hora}
-                        onChange={(e) =>
-                          setHora(formatarHoraDigitada(e.target.value))
-                        }
+                        onChange={(e) => mudarHoraInicio(e.target.value)}
                         onBlur={() => setHoraTocada(true)}
                         aria-invalid={Boolean(erroHora)}
                         aria-describedby={erroHora ? "erro-hora" : "ajuda-hora"}
@@ -379,6 +427,61 @@ export default function NovoAgendamento() {
                       </p>
                     )}
                   </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label htmlFor="hora-fim" className={rotulo}>
+                      Término <span className="text-red-500">*</span>
+                    </label>
+
+                    <div className="relative">
+                      <span className="material-symbols-outlined pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[20px] text-gray-400">
+                        schedule
+                      </span>
+                      <input
+                        id="hora-fim"
+                        type="text"
+                        inputMode="numeric"
+                        autoComplete="off"
+                        maxLength={5}
+                        placeholder="09:00"
+                        value={horaFim}
+                        onChange={(e) => mudarHoraFim(e.target.value)}
+                        onBlur={() => setHoraFimTocada(true)}
+                        aria-invalid={Boolean(erroHoraFim)}
+                        aria-describedby={
+                          erroHoraFim ? "erro-hora-fim" : "ajuda-hora-fim"
+                        }
+                        required
+                        className={`${campo} pl-11 tabular-nums ${
+                          erroHoraFim ? "ring-red-400 focus:ring-red-400" : ""
+                        }`}
+                      />
+                    </div>
+                    {erroHoraFim ? (
+                      <p
+                        id="erro-hora-fim"
+                        role="alert"
+                        className="text-xs font-medium text-red-500"
+                      >
+                        {erroHoraFim}
+                      </p>
+                    ) : (
+                      <p id="ajuda-hora-fim" className="text-xs text-gray-400">
+                        07:00 – 21:59
+                      </p>
+                    )}
+                  </div>
+
+                  <p className="text-xs text-gray-500 sm:col-span-3">
+                    Duração:{" "}
+                    <span className="font-semibold text-primary-dark">
+                      {duracaoTexto}
+                    </span>
+                    <span className="text-gray-400">
+                      {" "}
+                      · padrão de 1 hora, ajustável
+                    </span>
+                  </p>
                 </div>
 
                 {/* Observação */}

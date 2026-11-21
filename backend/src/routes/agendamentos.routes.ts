@@ -23,10 +23,20 @@ function dataHoraValida(v: unknown) {
   )
 }
 
+// O término precisa estar no mesmo dia e depois do início.
+function periodoValido(inicio: unknown, fim: unknown) {
+  if (!dataHoraValida(inicio) || !dataHoraValida(fim)) return false
+
+  return (
+    String(inicio).slice(0, 10) === String(fim).slice(0, 10) &&
+    new Date(String(fim)).getTime() > new Date(String(inicio)).getTime()
+  )
+}
+
 function agendamentoDoUsuario(id: number, userId: number) {
   return supabase
     .from("agendamentos")
-    .select("id, paciente_id, data_hora, tipo, status, observacao, pacientes!inner(id, id_user)")
+    .select("id, paciente_id, data_hora, data_fim, tipo, status, observacao, pacientes!inner(id, id_user)")
     .eq("id", id)
     .eq("pacientes.id_user", userId)
     .maybeSingle()
@@ -48,7 +58,7 @@ router.get("/", async (req, res) => {
   const { data, error } = await supabase
     .from("agendamentos")
     .select(
-      "id, paciente_id, data_hora, tipo, status, observacao, pacientes!inner(id, nome_paciente, id_user)"
+      "id, paciente_id, data_hora, data_fim, tipo, status, observacao, pacientes!inner(id, nome_paciente, id_user)"
     )
     .eq("pacientes.id_user", userId)
 
@@ -68,7 +78,7 @@ router.get("/pendentes-evolucao", async (req, res) => {
   const { data, error } = await supabase
     .from("agendamentos")
     .select(
-      `id, data_hora, tipo, status, observacao, evolucoes ( id ),
+      `id, data_hora, data_fim, tipo, status, observacao, evolucoes ( id ),
        pacientes!inner ( id, nome_paciente, id_user )`
     )
     .eq("pacientes.id_user", userId)
@@ -112,7 +122,7 @@ router.get("/sem-evolucao", async (req, res) => {
 
   const { data, error } = await supabase
     .from("agendamentos")
-    .select("id, data_hora, tipo, status, evolucoes(id)")
+    .select("id, data_hora, data_fim, tipo, status, evolucoes(id)")
     .eq("paciente_id", paciente.id)
     .lte("data_hora", agora)
     .order("data_hora", { ascending: false })
@@ -129,13 +139,13 @@ router.get("/sem-evolucao", async (req, res) => {
 
 router.post("/", async (req, res) => {
   const userId = (req as any).userId
-  const { paciente_id, data_hora, tipo, observacao } = req.body
+  const { paciente_id, data_hora, data_fim, tipo, observacao } = req.body
   const pacienteId = Number(paciente_id)
 
   if (
     !Number.isInteger(pacienteId) ||
     pacienteId <= 0 ||
-    !dataHoraValida(data_hora) ||
+    !periodoValido(data_hora, data_fim) ||
     !TIPOS.includes(tipo)
   ) {
     return res.status(400).json({ error: "Dados inválidos" })
@@ -154,6 +164,7 @@ router.post("/", async (req, res) => {
     .insert({
       paciente_id: paciente.id,
       data_hora,
+      data_fim,
       tipo,
       status: STATUS_AGENDADO,
       observacao: String(observacao ?? "").trim(),
@@ -189,13 +200,13 @@ router.patch("/:id", async (req, res) => {
   if (erroAtual) return res.status(500).json({ error: erroAtual.message })
   if (!atual) return res.status(404).json({ error: "Agendamento não encontrado" })
 
-  const { paciente_id, data_hora, tipo, observacao } = req.body
+  const { paciente_id, data_hora, data_fim, tipo, observacao } = req.body
   const pacienteId = Number(paciente_id)
 
   if (
     !Number.isInteger(pacienteId) ||
     pacienteId <= 0 ||
-    !dataHoraValida(data_hora) ||
+    !periodoValido(data_hora, data_fim) ||
     !TIPOS.includes(tipo)
   ) {
     return res.status(400).json({ error: "Dados inválidos" })
@@ -213,12 +224,13 @@ router.patch("/:id", async (req, res) => {
     .update({
       paciente_id: paciente.id,
       data_hora,
+      data_fim,
       tipo,
       status: STATUS_AGENDADO,
       observacao: String(observacao ?? "").trim(),
     })
     .eq("id", id)
-    .select("id, paciente_id, data_hora, tipo, status, observacao")
+    .select("id, paciente_id, data_hora, data_fim, tipo, status, observacao")
     .single()
 
   if (error) return res.status(500).json({ error: error.message })
