@@ -5,6 +5,8 @@ import { autenticar } from "../middlewares/auth.middleware.js"
 const router = Router()
 router.use(autenticar)
 
+const STATUS_CANCELADO = "Cancelado"
+
 function somarDias(dataStr: string, n: number) {
   const d = new Date(`${dataStr}T00:00:00Z`)
   d.setUTCDate(d.getUTCDate() + n)
@@ -16,6 +18,7 @@ async function contarAgendamentos(userId: number, de: string, ate: string) {
     .from("agendamentos")
     .select("id, pacientes!inner(id_user)", { count: "exact", head: true })
     .eq("pacientes.id_user", userId)
+    .neq("status", STATUS_CANCELADO)
     .gte("data_hora", `${de}T00:00:00`)
     .lt("data_hora", `${ate}T00:00:00`)
   if (error) throw new Error(error.message)
@@ -97,7 +100,7 @@ router.get("/resumo", async (req, res) => {
       .map((p) => ({
         ...p,
         agendamentos: (p.agendamentos ?? []).filter(
-          (a: any) => a.status !== "Cancelado" && a.evolucoes.length === 0
+          (a: any) => a.status !== STATUS_CANCELADO && a.evolucoes.length === 0
         ),
       }))
       .filter((p) => p.agendamentos.length > 0)

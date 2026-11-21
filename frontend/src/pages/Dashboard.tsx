@@ -5,7 +5,10 @@ import { useEffect, useState, useRef } from "react";
 import type { Agendamento } from "../types/types";
 import { useUser } from "../context/UserContext";
 import { primeiroNome } from "../lib/nome";
-import { chaveDiaDoAgendamento } from "../lib/agendamentos";
+import {
+  chaveDiaDoAgendamento,
+  STATUS_CANCELADO,
+} from "../lib/agendamentos";
 import { Link, useNavigate } from "react-router-dom";
 
 
@@ -172,11 +175,17 @@ export default function Dashboard() {
   carregarDados();
 }, [IdUser]);
 
-  // Índice do próximo atendimento de hoje (primeiro que ainda não passou)
+  // Índice do próximo atendimento de hoje (primeiro ativo que ainda não passou)
   const agora = new Date();
   const indiceProximo = agendamentosHoje.findIndex(
-    (a) => new Date(a.data_hora) >= agora,
+    (a) =>
+      a.status !== STATUS_CANCELADO && new Date(a.data_hora) >= agora,
   );
+
+  // Cancelados continuam visíveis na lista, mas não contam como horários ativos.
+  const agendamentosAtivosHoje = agendamentosHoje.filter(
+    (a) => a.status !== STATUS_CANCELADO,
+  ).length;
 
   const resumoDia = carregandoResumo
     ? "Carregando seu resumo de hoje..."
@@ -458,10 +467,10 @@ function completarNota(paciente: Pacientes, agendamento: AgendamentoPendente) {
                     <Skeleton className="mt-1 h-4 w-40" />
                   ) : (
                     <p className="text-sm text-gray-500">
-                      {agendamentosHoje.length === 0
-                        ? "Sem horários marcados"
-                        : `${agendamentosHoje.length} ${
-                            agendamentosHoje.length === 1
+                      {agendamentosAtivosHoje === 0
+                        ? "Sem horários ativos"
+                        : `${agendamentosAtivosHoje} ${
+                            agendamentosAtivosHoje === 1
                               ? "horário marcado"
                               : "horários marcados"
                           }`}
@@ -504,8 +513,9 @@ function completarNota(paciente: Pacientes, agendamento: AgendamentoPendente) {
               ) : (
                 <div className="flex flex-col gap-3">
                   {agendamentosHoje.map((agendamento, i) => {
+                    const cancelado = agendamento.status === STATUS_CANCELADO;
                     const passou = new Date(agendamento.data_hora) < agora;
-                    const ehProximo = i === indiceProximo;
+                    const ehProximo = !cancelado && i === indiceProximo;
                     const nomeCompleto = [
                       agendamento.pacientes?.nome_paciente,
                       agendamento.pacientes?.sobrenome_paciente,
@@ -526,14 +536,16 @@ function completarNota(paciente: Pacientes, agendamento: AgendamentoPendente) {
                           ehProximo
                             ? "border-primary/40 bg-primary/5 shadow-sm"
                             : "border-gray-100 hover:border-primary/30 hover:bg-primary/5"
-                        } ${passou ? "opacity-60" : ""}`}
+                        } ${cancelado || passou ? "opacity-60" : ""}`}
                       >
                         <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
                           <div
                             className={`flex w-16 shrink-0 flex-col items-center justify-center rounded-xl px-2 py-2 sm:w-20 sm:px-3 ${
-                              ehProximo
-                                ? "bg-primary text-white"
-                                : "bg-primary/10 text-primary-dark"
+                              cancelado
+                                ? "bg-gray-100 text-gray-400"
+                                : ehProximo
+                                  ? "bg-primary text-white"
+                                  : "bg-primary/10 text-primary-dark"
                             }`}
                           >
                             <p className="text-lg font-bold tabular-nums">
@@ -548,18 +560,30 @@ function completarNota(paciente: Pacientes, agendamento: AgendamentoPendente) {
 
                           <div className="flex min-w-0 flex-col">
                             <div className="flex flex-wrap items-center gap-2">
-                              <h4 className="truncate font-bold">
+                              <h4
+                                className={`truncate font-bold ${
+                                  cancelado ? "text-gray-400 line-through" : ""
+                                }`}
+                              >
                                 {nomeCompleto || "Paciente sem nome"}
                               </h4>
-                              {ehProximo && (
-                                <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-semibold text-primary-dark">
-                                  Próximo
+                              {cancelado ? (
+                                <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-500">
+                                  Cancelado
                                 </span>
-                              )}
-                              {passou && (
-                                <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">
-                                  Concluído
-                                </span>
+                              ) : (
+                                <>
+                                  {ehProximo && (
+                                    <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-semibold text-primary-dark">
+                                      Próximo
+                                    </span>
+                                  )}
+                                  {passou && (
+                                    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">
+                                      Concluído
+                                    </span>
+                                  )}
+                                </>
                               )}
                             </div>
                             {detalhes && (
